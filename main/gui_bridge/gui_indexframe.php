@@ -10,6 +10,7 @@ $DefaultMenuTreeDir = 'default';
 
 $cfg['mainmenu_tree'] = 'dtree';
 
+if (!isset($egal)) $egal=1;
 #
 # Load the menu tree. Make intelligent checks. Defaults to "default" directory if nothing works.
 #
@@ -52,11 +53,11 @@ function checkIfChanged(lang)
 }
 </script>
 </HEAD>
- 
+
  <?php
  # Prepare values for body template
-if($boot || $_chg_lang_){
-	 $TP_js_onload= 'onLoad="if (window.focus) window.focus();window.parent.CONTENTS.location.replace(\'startframe.php?sid='.$sid.'&lang='.$lang.'&egal='.$egal.'&cookie='.$cookie.'\');"';
+if(isset($boot) || isset($_chg_lang_)){
+	$TP_js_onload= 'onLoad="if (window.focus) window.focus();window.parent.CONTENTS.location.replace(\'startframe.php?sid='.$sid.'&lang='.$lang.'&egal='.$egal.'&cookie='.$cookie.'\');"';
 }else{
 	$TP_js_onload='onLoad="if (window.focus) window.focus();"';
 }
@@ -76,7 +77,7 @@ if(!$cfg['dhtml']){
 
 $TP_logo=createLogo($root_path,'care_logo.png','0');
 
-$tp_body=&$TP_obj->load('tp_main_index_menu_body.htm');
+$tp_body=$TP_obj->load('tp_main_index_menu_body.htm');
 eval("echo $tp_body;");
 
 #
@@ -99,9 +100,9 @@ if(!$GLOBALCONFIG['language_single']){
     <form action="#" onSubmit="return checkIfChanged(this.lang.value)">
     <hr>
     <?php echo $LDLanguage ?><br>
-     <select name="lang"> 
+     <select name="lang">
     <?php
-    
+
     require($root_path.'include/care_api_classes/class_language.php');
     $lang_obj=new Language;
     $langselect= $lang_obj->createSelectForm($lang);
@@ -127,22 +128,25 @@ if(!$GLOBALCONFIG['language_single']){
 <font SIZE=2 color="#6f6f6f" face="arial,verdana">
 <?php // echo $dbtype; ?>
 <br>
-<?php if($_SESSION['sess_login_username'] != '') echo '<img '.createComIcon($root_path,'team_tree.gif').'><br>' ; 
-echo $_SESSION['sess_login_username']; ?>
+<?php
+if(isset($_SESSION['sess_login_username']) and $_SESSION['sess_login_username'] != '') {
+	echo '<img '.createComIcon($root_path,'team_tree.gif').'><br>' ;
+	echo $_SESSION['sess_login_username'];
+} ?>
 <br>
-<?php 
+<?php
 require_once($root_path.'include/care_api_classes/class_department.php');
 $dept=new Department;
-$depts=&$dept->getAllActive();
+$depts=$dept->getAllActive();
 $sTemp = '';
 if($depts&&is_array($depts)) {
      while(list($x,$v)=each($depts))
-    	 if(in_array($v['nr'],$_SESSION['department_nr']))
-    		 if(isset($$v['LD_var']) && $$v['LD_var']) $sTemp = $sTemp .  $$v['LD_var'] . '<br>';
+    	 if(isset($_SESSION['department_nr']) and is_array($_SESSION['department_nr']) and in_array($v['nr'],$_SESSION['department_nr']))
+    		 if(isset(${$v['LD_var']}) && ${$v['LD_var']}) $sTemp = $sTemp .  ${$v['LD_var']} . '<br>';
     			 else $sTemp = $sTemp . $v['name_formal'] . '<br>';
-    			 
+
 if($sTemp != '') echo '<img '.createComIcon($root_path,'home.gif').'><br>';
-echo  $sTemp;	
+echo  $sTemp;
 }
 ?>
 <br>
@@ -150,11 +154,11 @@ echo  $sTemp;
 require_once($root_path.'include/care_api_classes/class_ward.php');
 $ward_obj=new Ward;
 $items='nr,ward_id,name, dept_nr'; // set the items to be fetched
-$ward_info=&$ward_obj->getAllWardsItemsArray($items);
-$sTemp = '';         
+$ward_info=$ward_obj->getAllWardsItemsArray($items);
+$sTemp = '';
 if($ward_info&&is_array($ward_info)){
      while(list($x,$v)=each($ward_info)){
-    	 if(in_array($v['dept_nr'],$_SESSION['department_nr']))         			 
+    	 if(in_array($v['dept_nr'],$_SESSION['department_nr']))
     		$sTemp = $sTemp . $v['name'] . '<br>';
     }
 if($sTemp != '') echo '<img '.createComIcon($root_path,'statbel2.gif').'><br>';

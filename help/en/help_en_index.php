@@ -1,8 +1,8 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
  // globalize POST, GET, & COOKIE  vars
 require('./roots.php');
 require_once($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 require_once($root_path.'include/core/inc_charset_fx.php') // load the charset functions
 ?>
 <?php html_rtl($lang); ?>
@@ -24,9 +24,9 @@ require_once($root_path.'include/core/inc_charset_fx.php') // load the charset f
  --><p>
  <p>
  <b>
-<font color=#ff0000><b>*</b></font><a href="http://care2x.org/wiki/index.php/UM_-_English" target="HELPINFOFRAME">Online Manual</a>
+<font color=#ff0000><b>*</b></font><a href="http://wiki.care2x.org/index.php?title=UM_-_English" target="HELPINFOFRAME">Online Manual</a>
 <p>
-<font color=#ff0000><b>*</b></font><a href="http://care2x.org/wiki/index.php/Workflow_Charts" target="HELPINFOFRAME">Workflow charts</a>
+<font color=#ff0000><b>*</b></font><a href="http://wiki.care2x.org/index.php?title=Workflow_Charts" target="HELPINFOFRAME">Workflow charts</a>
 </b>
 <P>
  (<font size=1>needs Internet connection</font><font color=#ff0000><b>*</b></font>)

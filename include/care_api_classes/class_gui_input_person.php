@@ -62,7 +62,7 @@ class GuiInputPerson {
 	/**
 	* Constructor
 	*/
-	function GuiInputPerson($filename = ''){
+	function __construct($filename = ''){
 		global $thisfile, $root_path;
 		if(empty($filename)) $this->thisfile = $thisfile;
 			else $this->thisfile = $filename;
@@ -92,9 +92,12 @@ class GuiInputPerson {
 			else $sBuffer=$ld_text;
 			//$this->smarty->assign('must',1);
 			$this->smarty->assign('sItem',$sBuffer);
+			$this->smarty->assign('sColSpan1',"colspan=1");
 			$this->smarty->assign('sColSpan2',"colspan=$colspan");
+			$this->smarty->assign('sFormWidth','width="auto"');
 			$this->smarty->assign('sInput','<input name="'.$input_name.'" type="text" size="'.$input_size.'" value="'.$input_val.'" >');
 			$this->smarty->display('registration_admission/reg_row.tpl');
+			$this->smarty->assign('sBarcodeImg','');
 			$sBuffer = ob_get_contents();
 		ob_end_clean();
 
@@ -107,9 +110,12 @@ class GuiInputPerson {
 	*/
 	function display(){
 		global $db, $sid, $lang, $root_path, $pid, $insurance_show, $user_id, $mode, $dbtype, $breakfile, $cfg,
-				$update, $photo_filename, $_POST,  $_FILES, $_SESSION;
+				$update, $photo_filename, $_POST,  $_FILES, $_SESSION, $dbf_nodate;
 
 		extract($_POST);
+		require_once($root_path.'include/care_api_classes/class_globalconfig.php');
+		$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
+		$glob_obj->getConfig();
 
 		# Load the language tables
 		$lang_tables =$this->langfiles;
@@ -125,16 +131,46 @@ class GuiInputPerson {
 		//$db->debug=true;
 
 		# Create the new person object
-		$person_obj=& new Person($pid);
+		$person_obj= new Person($pid);
 
 		# Create a new person insurance object
-		$pinsure_obj=& new PersonInsurance($pid);
+		$pinsure_obj= new PersonInsurance($pid);
 
 		if(!isset($insurance_show)) $insurance_show=TRUE;
 
 		$newdata=1;
 
-		$error=0;
+		//Set the error flags to false
+		$error=False;
+		$errortitle = False;
+		$errornamefirst = False;
+		$errornamelast = False;
+		$errorname2 = False;
+		$errorname3 = False;
+		$errornamemid = False;
+		$errornamemaiden = False;
+		$errornameothers = False;
+		$errordatebirth = False;
+		$errorsex = False;
+		$erroraddress = False;
+		$errorstreet = False;
+		$errorstreetnr = False;
+		$errortown = False;
+		$errorzip = False;
+		$errorinsurancenr = False;
+		$errorinsuranceclass = False;
+		$errorinsurancecoid = False;
+		$errorphone1 = False;
+		$errorphone2 = False;
+		$errorcell1 = False;
+		$errorcell2 = False;
+		$errorfax = False;
+		$erroremail = False;
+		$errorcitizen = False;
+		$errorsss = False;
+		$errornatid = False;
+		$errorreligion = False;
+
 		$dbtable='care_person';
 
 		if(!isset($photo_filename)||empty($photo_filename)) $photo_filename='nopic';
@@ -149,7 +185,7 @@ class GuiInputPerson {
 		//extract($GLOBAL_CONFIG);
 
 		# Check whether config foto path exists, else use default path
-		$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_foto_path'])) ? $GLOBAL_CONFIG['person_foto_path'] : $this->default_photo_path;
+		$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_photo_path'])) ? $GLOBAL_CONFIG['person_photo_path'] : $this->default_photo_path;
 
 		if (($mode=='save') || ($mode=='forcesave')) {
 
@@ -162,7 +198,7 @@ class GuiInputPerson {
 				if (trim($date_birth)=='') { $errordatebirth=1; $error++;}
 				if (trim($addr_str)=='') { $errorstreet=1; $error++;}
 				if (trim($addr_str_nr)=='') { $errorstreetnr=1; $error++;}
-				if ($addr_citytown_nr&&(trim($addr_citytown_name)=='')) { $errortown=1; $error++;}
+				if ($addr_citytown_nr&&(trim($addr_citytown_nr)=='')) { $errortown=1; $error++;}
 				if ($sex=='') { $errorsex=1; $error++;}
 				if($insurance_show) {
 					if(trim($insurance_nr) && (trim($insurance_firm_name)=='')) { $errorinsurancecoid=1; $error++;}
@@ -177,7 +213,7 @@ class GuiInputPerson {
 
 				# Create image object
 				include_once($root_path.'include/care_api_classes/class_image.php');
-				$img_obj=& new Image;
+				$img_obj= new Image;
 
 				# Check the uploaded image file if exists and valid
 				if($img_obj->isValidUploadedImage($_FILES['photo_filename'])){
@@ -263,6 +299,138 @@ class GuiInputPerson {
 										);
 								$pinsure_obj->insertDataFromArray($insure_data);
 							}
+							if($GLOBAL_CONFIG['kwamoja_database'] != '') {
+								/* First off check if the patient exists in ERP */
+								$KwaMojaCheckSQL = "SELECT COUNT(debtorno) AS existing
+														FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".debtorsmaster
+														WHERE debtorno='" . $pid . "'";
+								$KwaMojaCheckResult = $db->Execute($KwaMojaCheckSQL);
+								$KwaMojaCheckRow = $KwaMojaCheckResult->FetchRow();
+								/* Get the city/town name */
+								$CitySQL = "SELECT name FROM care_address_citytown WHERE nr='" . $addr_citytown_nr . "'";
+								$CityResult = $db->Execute($CitySQL);
+								$CityRow = $CityResult->FetchRow();
+
+								/* Get the default currency code */
+								$DefaultCurrencySQL = "SELECT currencydefault FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".companies";
+								$DefaultCurrencyResult = $db->Execute($DefaultCurrencySQL);
+								$DefaultCurrencyRow = $DefaultCurrencyResult->FetchRow();
+
+								/* Get the default price list */
+								$DefaultPriceListSQL = "SELECT confvalue
+														FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".config
+														WHERE confname='DefaultPriceList'";
+								$DefaultPriceListResult = $db->Execute($DefaultPriceListSQL);
+								$DefaultPriceListRow = $DefaultPriceListResult->FetchRow();
+
+								 if ($phone_1_nr != '') {
+									 $PhoneNumber = $phone_1_nr;
+								 } else if ($phone_2_nr != '') {
+									 $PhoneNumber = $phone_2_nr;
+								 } else if ($cellphone_1_nr != '') {
+									 $PhoneNumber = $cellphone_1_nr;
+								 } else if ($cellphone_2_nr != '') {
+									 $PhoneNumber = $cellphone_2_nr;
+								 }
+
+								if($KwaMojaCheckRow['existing'] > 0) {
+									/* Update the KwaMoja database */
+									$KwaMojaUpdatePatientSQL = "UPDATE " . $GLOBAL_CONFIG['kwamoja_database'] . ".debtorsmaster
+																	SET name='" . $name_first . ' ' . $name_last . "',
+																		address1='" . $addr_str_nr . ' ' . $addr_str . "',
+																		address2='" . $CityRow['name'] . "',
+																		address3='" . $addr_zip . "',
+																		currcode='" . $DefaultCurrencyRow['currencydefault'] . "',
+																		salestype='" . $DefaultPriceListRow['confvalue'] . "',
+																		paymentterms='" . $GLOBAL_CONFIG['kwamoja_default_terms'] . "',
+																		holdreason='" . $GLOBAL_CONFIG['kwamoja_default_reason'] . "',
+																		typeid='" . $GLOBAL_CONFIG['kwamoja_default_debtor_type'] . "',
+																		gender='" . $sex . "'
+																	WHERE debtorno='" . $pid . "'";
+									$Result = $db->Execute($KwaMojaUpdatePatientSQL);
+									if ($Result) {
+										/* This is a returning patient so they may have
+										 * multiple branches, so we need to loop through
+										 * each one updating the information
+										 */
+										$KwaMojaBranchesSQL = "SELECT branchcode
+																	FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".custbranch
+																WHERE debtorno='" . $pid . "'";
+										$KwaMojaBranchesResult = $db->Execute($KwaMojaBranchesSQL);
+										while ($BranchCodes = $KwaMojaBranchesResult->FetchRow()) {
+											$KwaMojaUpdateBranchSQL = "UPDATE " . $GLOBAL_CONFIG['kwamoja_database'] . ".custbranch
+																		SET brname='" . $BranchCodes['branchcode'] . " - " . $name_first . ' ' . $name_last . "',
+																			area='" . $GLOBAL_CONFIG['kwamoja_default_area'] . "',
+																			salesman='" . $GLOBAL_CONFIG['kwamoja_default_salesman'] . "',
+																			defaultlocation='" . $GLOBAL_CONFIG['kwamoja_default_location'] . "',
+																			defaultshipvia='" . $GLOBAL_CONFIG['kwamoja_default_shipper'] . "',
+																			taxgroupid='" . $GLOBAL_CONFIG['kwamoja_default_tax_group'] . "',
+																			phoneno='" . $PhoneNumber . "'
+																		WHERE branchcode='" . $BranchCodes['branchcode'] . "'
+																			AND debtorno='" . $pid . "'";
+											$Result = $db->Execute($KwaMojaUpdateBranchSQL);
+										}
+									}
+								} else {
+									/* Insert into the KwaMoja database */
+									$KwaMojaInsertPatientSQL = "INSERT INTO " . $GLOBAL_CONFIG['kwamoja_database'] . ".debtorsmaster (
+																	debtorno,
+																	name,
+																	address1,
+																	address2,
+																	address3,
+																	currcode,
+																	salestype,
+																	clientsince,
+																	paymentterms,
+																	holdreason,
+																	typeid,
+																	gender
+																) VALUES (
+																	'" . $pid . "',
+																	'" . $name_first . ' ' . $name_last . "',
+																	'" . $addr_str_nr . ' ' . $addr_str . "',
+																	'" . $CityRow['name'] . "',
+																	'" . $addr_zip . "',
+																	'" . $DefaultCurrencyRow['currencydefault'] . "',
+																	'" . $DefaultPriceListRow['confvalue'] . "',
+																	CURRENT_DATE,
+																	'" . $GLOBAL_CONFIG['kwamoja_default_terms'] . "',
+																	'" . $GLOBAL_CONFIG['kwamoja_default_reason'] . "',
+																	'" . $GLOBAL_CONFIG['kwamoja_default_debtor_type'] . "',
+																	'" . $sex . "'
+																)";
+									$Result = $db->Execute($KwaMojaInsertPatientSQL);
+									if ($Result) {
+										/* As this is a new customer being created we need
+										 * to create a default branch for it. This is always
+										 * called CASH
+										 */
+										 $KwaMojaInsertBranchSQL = "INSERT INTO " . $GLOBAL_CONFIG['kwamoja_database'] . ".custbranch (
+																		branchcode,
+																		debtorno,
+																		brname,
+																		area,
+																		salesman,
+																		defaultlocation,
+																		defaultshipvia,
+																		taxgroupid,
+																		phoneno
+																	) VALUES (
+																		'CASH',
+																		'" . $pid . "',
+																		'CASH - " . $name_first . ' ' . $name_last . "',
+																		'" . $GLOBAL_CONFIG['kwamoja_default_area'] . "',
+																		'" . $GLOBAL_CONFIG['kwamoja_default_salesman'] . "',
+																		'" . $GLOBAL_CONFIG['kwamoja_default_location'] . "',
+																		'" . $GLOBAL_CONFIG['kwamoja_default_shipper'] . "',
+																		'" . $GLOBAL_CONFIG['kwamoja_default_tax_group'] . "',
+																		'" . $PhoneNumber . "'
+																	)";
+										$Result = $db->Execute($KwaMojaInsertBranchSQL);
+									}
+								}
+							}
 						}
 						$newdata=1;
 						//$db->debug=1;
@@ -297,13 +465,15 @@ class GuiInputPerson {
 						# else let the dbms make an initial value via the sequence generator e.g. postgres
 						# However, the sequence generator must be configured during db creation to start at
 						# the initial value set in the global config
-						if($dbtype=='mysql'){
+						if($dbtype=='mysqli'){
 							$_POST['pid']=$GLOBAL_CONFIG['person_id_nr_init'];
 						}
 					}else{
 						# Persons are existing. Check if duplicate might exist
 						if(is_object($duperson=$person_obj->PIDbyData($_POST))){
 							$error_person_exists=TRUE;
+						} else {
+							$error_person_exists=False;
 						}
 					}
 					//echo $person_obj->getLastQuery();
@@ -311,15 +481,36 @@ class GuiInputPerson {
 					if(!$error_person_exists||$mode=='forcesave'){
 						if($person_obj->insertDataFromInternalArray()){
 
+							if (isset($GLOBAL_CONFIG['kwamoja_database']) and $GLOBAL_CONFIG['kwamoja_database']!='') {
+								if (isset($GLOBAL_CONFIG['kwamoja_fileopen_item']) and $GLOBAL_CONFIG['kwamoja_fileopen_item']!='') {
+									$BillingItemSQL = "INSERT INTO care_billing_bill_item (
+																	pid,
+																	bill_item_code,
+																	bill_item_units,
+																	bill_item_date,
+																	bill_item_status
+																) VALUES (
+																	'" . $person_obj->pid . "',
+																	'" . $GLOBAL_CONFIG['kwamoja_fileopen_item'] . "',
+																	1,
+																	CURRENT_DATE,
+																	0
+																)";
+									$BillingItemResult = $db->Execute($BillingItemSQL);
+								}
+							}
+
+
 							# If data was newly inserted, get the insert id if mysql,
 							# else get the pid number from the latest primary key
 
 							if(!$update){
-								$oid = $db->Insert_ID();
-								if (empty($oid)) $oid = $_POST['pid'];
-								$pid=$person_obj->LastInsertPK('pid',$oid);
+								// $oid = $db->Insert_ID();
+								// if (empty($oid)) $oid = $_POST['pid'];
+								//$pid=$person_obj->LastInsertPK('pid',$oid);
 								//EL: set the new pid
-								$person_obj->setPID($pid);
+								// $person_obj->setPID($pid);
+								$pid=$person_obj->pid;
 							}
 
 							// KB: save other_his_no
@@ -372,13 +563,13 @@ class GuiInputPerson {
 			} // end of if(!$error)
 		}elseif(!empty($this->pid)){
 			 # Get the person�s data
-			if($data_obj=&$person_obj->getAllInfoObject()){
+			if($data_obj=$person_obj->getAllInfoObject()){
 
 				$zeile=$data_obj->FetchRow();
 				extract($zeile);
 
 				# Get the related insurance data
-				$p_insurance=&$pinsure_obj->getPersonInsuranceObject($pid);
+				$p_insurance=$pinsure_obj->getPersonInsuranceObject($pid);
 				if($p_insurance==FALSE) {
 					$insurance_show=TRUE;
 				} else {
@@ -395,10 +586,42 @@ class GuiInputPerson {
 				}
 			}
 		} else {
+			// Then we are showing an empty form
 			$date_reg=date('Y-m-d H:i:s');
+
+			//Set default values for input fields
+			$title = '';
+			$name_first = '';
+			$name_last = '';
+			$name_2 = '';
+			$name_3 = '';
+			$name_middle = '';
+			$name_maiden = '';
+			$name_others = '';
+			$date_birth = '0000-00-00';
+			$blood_group = '';
+			$sex = 'male';
+			$civil_status = '';
+			$addr_str = '';
+			$addr_str_nr = '';
+			$addr_citytown_nr = '';
+			$addr_zip = '';
+			$insurance_nr = '';
+			$insurance_class_nr = '';
+			$phone_1_nr = '';
+			$phone_2_nr = '';
+			$cellphone_1_nr = '';
+			$cellphone_2_nr = '';
+			$fax = '';
+			$email = '';
+			$citizenship = '';
+			$sss_nr = '';
+			$nat_id_nr = '';
+			$religion = '';
+			$ethnic_orig_txt = '';
 		}
 		# Get the insurance classes
-		$insurance_classes=&$pinsure_obj->getInsuranceClassInfoObject('class_nr,name,LD_var AS "LD_var"');
+		$insurance_classes=$pinsure_obj->getInsuranceClassInfoObject('class_nr,name,LD_var AS "LD_var"');
 
 		include_once($root_path.'include/core/inc_photo_filename_resolve.php');
 
@@ -413,7 +636,14 @@ class GuiInputPerson {
 
 		include_once($root_path.'gui/smarty_template/smarty_care.class.php');
 		$this->smarty = new smarty_care('common',FALSE);
-
+		$this->smarty->assign('error',FALSE);
+		$this->smarty->assign('errorDupPerson',FALSE);
+		$this->smarty->assign('bNoInsurance',True);
+		if(isset($death_date)&&$death_date!=$dbf_nodate) $sCross = '&nbsp;<img '.createComIcon($root_path,'blackcross_sm.gif','0','',TRUE).'>';
+		else $sCross ='';
+		$this->smarty->assign('sCrossImg',$sCross);
+        $this->smarty->assign('sDeathDate','');
+        $this->smarty->assign('pretext','');
 		$img_male=createComIcon($root_path,'spm.gif','0');
 		$img_female=createComIcon($root_path,'spf.gif','0');
 
@@ -493,7 +723,7 @@ class GuiInputPerson {
 
 		$this->smarty->assign('sRegFormJavaScript',$sTemp);
 
-		$this->smarty->assign('thisfile',$thisfile);
+		$this->smarty->assign('thisfile',$this->thisfile);
 
 		if($error) {
 			$this->smarty->assign('error',TRUE);
@@ -501,7 +731,7 @@ class GuiInputPerson {
 			if ($error>1) $this->smarty->assign('sErrorText',$LDErrorS);
 				else $this->smarty->assign('sErrorText',$LDError);
 
-		}elseif($error_person_exists){
+		}elseif(isset($error_person_exists)){
 			$this->smarty->assign('errorDupPerson',TRUE);
 			$this->smarty->assign('sErrorImg','<img '.createMascot($root_path,'mascot1_r.gif','0','bottom').' align="absmiddle">');
 			$this->smarty->assign('LDPersonDuplicate',$LDPersonDuplicate);
@@ -553,7 +783,11 @@ class GuiInputPerson {
 			$this->smarty->assign('sDupDataRows',$sTemp);
 		}
 
-		if($pid) $this->smarty->assign('LDRegistryNr',$LDRegistryNr);
+		if($pid) {
+			$this->smarty->assign('LDRegistryNr',$LDRegistryNr);
+		} else {
+			$this->smarty->assign('LDRegistryNr','');
+		}
 		$this->smarty->assign('pid',$pid);
 		$this->smarty->assign('img_source',$img_source);
 		$this->smarty->assign('LDPhoto',$LDPhoto);
@@ -718,14 +952,14 @@ class GuiInputPerson {
 		else $this->smarty->assign('LDTownCity',"$LDTownCity:");
 
 		require_once($root_path.'include/care_api_classes/class_address.php');
-		$sAddress = '<select name="addr_citytown_name"><option onClick="updateAddress(\'  \',\'--\')" value=""></option>';
+		$sAddress = '<select name="addr_citytown_nr"><option onClick="updateAddress(\'  \',\'--\')" value=""></option>';
 		$address_obj=new Address;
 		$address = $address_obj->getAllActiveCityTown();
 		if(!empty($address)) {
 			if($address->RecordCount()) {
 				while($addr=$address->FetchRow()){
 					if($addr_citytown_nr == $addr['nr'] ) $selected = ' selected '; else $selected = ' ';
-				    $sAddress .= '<option onClick="updateAddress(\'' . $addr['zip_code'].'\',' . $addr['nr']. ')" value="' . $addr['name'] . '"' . $selected . ' >' . $addr['name'] . '</option>';
+				    $sAddress .= '<option onClick="updateAddress(\'' . $addr['zip_code'].'\',' . $addr['nr']. ')" value="' . $addr['nr'] . '"' . $selected . ' >' . $addr['name'] . '</option>';
 				}
 				$sAddress .= '</select>';
 				$this->smarty->assign('sTownCityInput',$sAddress);
@@ -740,11 +974,12 @@ class GuiInputPerson {
 		 else  $this->smarty->assign('LDZipCode'," $LDZipCode :");
 		 $this->smarty->assign('sZipCodeInput','<input id="addr_zip" name="addr_zip" type="text" size="10" value="'.$addr_zip.'">');
 
-
+		$this->smarty->assign('bShowInsurance',False);
+		$this->smarty->assign('LDSeveralInsurances','');
 		// KB: make insurance completely hideable
 		if (!$GLOBAL_CONFIG['person_insurance_hide']){
 			if($insurance_show) {
-				if (!$person_insurance_1_nr_hide) {
+				if (isset($GLOBAL_CONFIG['person_insurance_1_nr_hide']) and !$GLOBAL_CONFIG['person_insurance_1_nr_hide']) {
 
 					$this->smarty->assign('bShowInsurance',TRUE);
 
@@ -761,14 +996,14 @@ class GuiInputPerson {
 							$sInsClassBuffer.='>';
 
 							$LD=$result['LD_var'];
-							if(isset($$LD)&&!empty($$LD)) $sInsClassBuffer.=$$LD; else $sInsClassBuffer.=$result['name'];
+							if(isset(${$LD})&&!empty(${$LD})) $sInsClassBuffer.=${$LD}; else $sInsClassBuffer.=$result['name'];
 							$sInsClassBuffer.='&nbsp;';
 						}
 
 						$this->smarty->append('sInsClasses',$sInsClassBuffer);
 
 					} else {
-						$this->smarty->assign('sInsClasses','Nuk jane konfiguruar klasat e sigurimit');
+						//$this->smarty->assign('sInsClasses','Nuk jane konfiguruar klasat e sigurimit');
 					}
 
 					if ($errorinsurancecoid) $this->smarty->assign('LDInsuranceCo',"<font color=red>$LDInsuranceCo</font> :");
@@ -782,36 +1017,58 @@ class GuiInputPerson {
 				$this->smarty->assign('bNoInsurance',TRUE);
 				$this->smarty->assign('LDSeveralInsurances','<a href="#">$LDSeveralInsurances <img '.createComIcon($root_path,'frage.gif','0').'></a>');
 			}
+		} else {
+			$this->smarty->assign('bNoInsurance',TRUE);
 		}
 		if (!$GLOBAL_CONFIG['person_phone_1_nr_hide']){
 			$this->smarty->assign('sPhone1',$this->createTR($errorphone1, 'phone_1_nr', $LDPhone.' 1',$phone_1_nr,2));
+		} else {
+			$this->smarty->assign('sPhone1','');
 		}
 		if (!$GLOBAL_CONFIG['person_phone_2_nr_hide']){
 			$this->smarty->assign('sPhone2',$this->createTR($errorphone2, 'phone_2_nr', $LDPhone.' 2',$phone_2_nr,2));
+		} else {
+			$this->smarty->assign('sPhone2','');
 		}
 		if (!$GLOBAL_CONFIG['person_cellphone_1_nr_hide']){
 			$this->smarty->assign('sCellPhone1',$this->createTR($errorcell1, 'cellphone_1_nr', $LDCellPhone.' 1',$cellphone_1_nr,2));
+		} else {
+			$this->smarty->assign('sCellPhone1','');
 		}
 		if (!$GLOBAL_CONFIG['person_cellphone_2_nr_hide']){
 			$this->smarty->assign('sCellPhone2',$this->createTR($errorcell2, 'cellphone_2_nr', $LDCellPhone.' 2',$cellphone_2_nr,2));
+		} else {
+			$this->smarty->assign('sCellPhone2','');
 		}
 		if (!$GLOBAL_CONFIG['person_fax_hide']){
 			$this->smarty->assign('sFax',$this->createTR($errorfax, 'fax', $LDFax,$fax,2));
+		} else {
+			$this->smarty->assign('sFax','');
 		}
 		if (!$GLOBAL_CONFIG['person_email_hide']){
 			$this->smarty->assign('sEmail',$this->createTR($erroremail, 'email', $LDEmail,$email,2));
+		} else {
+			$this->smarty->assign('sEmail','');
 		}
 		if (!$GLOBAL_CONFIG['person_citizenship_hide']){
 			$this->smarty->assign('sCitizenship',$this->createTR($errorcitizen, 'citizenship', $LDCitizenship,$citizenship,2));
+		} else {
+			$this->smarty->assign('sCitizenship','');
 		}
 		if (!$GLOBAL_CONFIG['person_sss_nr_hide']){
 			$this->smarty->assign('sSSSNr',$this->createTR($errorsss, 'sss_nr', $LDSSSNr,$sss_nr,2));
+		} else {
+			$this->smarty->assign('sSSSNr','');
 		}
 		if (!$GLOBAL_CONFIG['person_nat_id_nr_hide']){
 			$this->smarty->assign('sNatIdNr',$this->createTR($errornatid, 'nat_id_nr', $LDNatIdNr,$nat_id_nr,2));
+		} else {
+			$this->smarty->assign('sNatIdNr','');
 		}
 		if (!$GLOBAL_CONFIG['person_religion_hide']){
 			$this->smarty->assign('sReligion',$this->createTR($errorreligion, 'religion', $LDReligion,$religion,2));
+		} else {
+			$this->smarty->assign('sReligion','');
 		}
 		if (!$GLOBAL_CONFIG['person_ethnic_orig_hide']){
 
@@ -828,8 +1085,10 @@ class GuiInputPerson {
 
 			$other_hosp_list = $person_obj->OtherHospNrList();
 			$sOtherNrBuffer='';
-			foreach( $other_hosp_list as $k=>$v ){
-				$sOtherNrBuffer.="<b>".$kb_other_his_array[$k].":</b> ".$v."<br />\n";
+			if ($other_hosp_list) {
+				foreach( $other_hosp_list as $k=>$v ){
+					$sOtherNrBuffer.="<b>".$kb_other_his_array[$k].":</b> ".$v."<br />\n";
+				}
 			}
 
 			$this->smarty->assign('sOtherNr',$sOtherNrBuffer);
@@ -838,7 +1097,7 @@ class GuiInputPerson {
 			$sOtherNrBuffer.="<SELECT name=\"other_his_org\">".
 						"<OPTION value=\"\">--</OPTION>";
 			foreach( $kb_other_his_array as $k=>$v ){
-				$sOtherNrBuffer.="<OPTION value=\"$k\" $check>$v</OPTION>";
+				$sOtherNrBuffer.="<OPTION value=\"$k\" >$v</OPTION>";
 			}
 			$sOtherNrBuffer.="</SELECT>\n".
 					"&nbsp;&nbsp;".
@@ -865,7 +1124,6 @@ class GuiInputPerson {
 			<input type="hidden" name="lang" value="<?php echo $lang; ?>">
 			<input type="hidden" name="linecount" value="<?php echo $linecount; ?>">
 			<input type="hidden" name="mode" value="save">
-			<input type="hidden" name="addr_citytown_nr" id="addr_citytown_nr" value="<?php echo $addr_citytown_nr; ?>">
 			<input type="hidden" name="insurance_item_nr" value="<?php echo $insurance_item_nr; ?>">
 			<input type="hidden" name="insurance_firm_id" value="<?php echo $GLOBAL_CONFIG['person_insurace_firm_default_id']; ?>">
 			<input type="hidden" name="insurance_show" value="<?php echo $insurance_show; ?>">
@@ -873,6 +1131,8 @@ class GuiInputPerson {
 <?php
 		if($update){
 			$this->smarty->assign('sUpdateHiddenInputs','<input type="hidden" name="update" value=1><input type="hidden" name="pid" value="'.$pid.'">');
+		} else {
+			$this->smarty->assign('sUpdateHiddenInputs','');
 		}
 
 		$sTemp= ob_get_contents();
@@ -882,7 +1142,11 @@ class GuiInputPerson {
 		$this->smarty->assign('pbSubmit','<input  type="image" '.createLDImgSrc($root_path,'savedisc.gif','0').'  alt="'.$LDSaveData.'" align="absmiddle">');
 		$this->smarty->assign('pbReset','<a href="javascript:document.aufnahmeform.reset()"><img '.createLDImgSrc($root_path,'reset.gif','0').' alt="'.$LDResetData.'"   align="absmiddle"></a>');
 
-		if($error||$error_person_exists) $this->smarty->assign('pbForceSave','<input  type="button" value="'.$LDForceSave.'" onClick="forceSave()">');
+		if(isset($error_person_exists) and ($error||$error_person_exists)) {
+			$this->smarty->assign('pbForceSave','<input  type="button" value="'.$LDForceSave.'" onClick="forceSave()">');
+		} else {
+			$this->smarty->assign('pbForceSave','');
+		}
 
 		if (!$newdata){
 			ob_start();
@@ -898,6 +1162,8 @@ class GuiInputPerson {
 			$sTemp= ob_get_contents();
 			ob_end_clean();
 			$this->smarty->assign('sNewDataForm',$sTemp);
+		} else {
+			$this->smarty->assign('sNewDataForm','');
 		}
 
 		# Set the form template as form

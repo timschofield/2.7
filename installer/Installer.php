@@ -3,8 +3,8 @@
  * Base Installer include file
  *
  */
-
-error_reporting(E_ALL ^ E_NOTICE);
+error_reporting(E_ALL && ~E_NOTICE);
+//error_reporting(-1);
 
 define('INSTALLER_PATH', realpath(dirname(__FILE__)));
 define('INSTALLER_API', true);
@@ -33,7 +33,7 @@ require_once(INSTALLER_PATH.'/includes/StripSlashes.php');
 
 class Installer{
 
-	function Installer() {}
+	function __construct() {}
 
 	static function getTemplatePath($template_name){
 		if(isset($GLOBALS['INSTALLER']['TEMPLATE_DIR'])){
@@ -88,7 +88,8 @@ class Installer{
 
 // Bootstrapping tests
 // Setup PHP Version numbers
-$version_components = explode('\.', phpversion());
+$version_components = explode('.', phpversion());
+
 $GLOBALS['INSTALLER']['PHP_VERSION_MAJOR'] = $version_components[0];
 $GLOBALS['INSTALLER']['PHP_VERSION_MINOR'] = $version_components[1];
 $GLOBALS['INSTALLER']['PHP_VERSION_REMAINING'] = implode('.', array_splice($version_components, 2));

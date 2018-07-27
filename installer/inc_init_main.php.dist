@@ -24,7 +24,7 @@ $key_login='INSTALL_KEY_3';
 $main_domain='INSTALL_ADDRESS';
 
 # Host address for images
-$fotoserver_ip='INSTALL_ADDRESS';
+$photoserver_ip='INSTALL_ADDRESS';
 
 # Transfer protocol. Use https if this runs on SSL server
 $httprotocol='INSTALL_PROTOCOL';
@@ -35,4 +35,11 @@ $dbtype='INSTALL_DB_TYPE';
 # Set this to your timezone.
 $timezone = 'TIMEZONE';
 date_default_timezone_set($timezone);
+
+//For production server
+$ErrorLevel = E_ALL && ~E_NOTICE && ~E_WARNING && ~E_DEPRECATED;
+
+//For development
+//$ErrorLevel = -1;
+
 ?>

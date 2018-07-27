@@ -22,22 +22,21 @@
 *  anon.php
 *
 */
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
-//error_reporting(E_ALL);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 
 //include($root_path.'include/care_api_classes/class_core.php');
-//$core = & new Core();
+//$core =  Core();
 include($root_path.'include/care_api_classes/class_person.php');
-$person = & new Person();
+$person =  Person();
 # Create the encounter object
 include($root_path.'include/care_api_classes/class_encounter.php');
-$enc = & new Encounter();
+$enc =  Encounter();
 
 #Create the image object
 include($root_path.'include/care_api_classes/class_image.php');
-$img= & new Image();
+$img=  Image();
 
 require('./include/inc_access.php');
 
@@ -400,7 +399,7 @@ function PersonRecEmpty($args){
 
 function PersonList($args){
 	global $person, $error;
-	
+
 	if(checkAccess($args)){
 		# Set field names of items to fetch
 		$items='pid, name_last, name_first, date_birth,  addr_zip, sex,  death_date, status';
@@ -485,7 +484,7 @@ function PersonAppt($args){
 function PersonApptList($args){
 	global $error,$root_path;
 	include($root_path.'include/care_api_classes/class_appointment.php');
-	$appt=& new Appointment();
+	$appt= Appointment();
 
 	if(checkAccess($args[0])){
 		$buf=$appt->getPersonsAppointmentsObj($args[1]);
@@ -539,7 +538,7 @@ function PersonImageAdd($args){
 
 function PersonPhotoIDSave($args){
 	global $root_path, $img, $error, $person, $httprotocol, $main_domain;
-	
+
 	$type='registration';
 	$picdir= $args[1];
 
@@ -856,7 +855,7 @@ function _ImageAdd($args,$type){
 	global $root_path, $img, $error, $person,$httprotocol,$main_domain;
 
 	$picdir= $args[1];
-	
+
 	$type='encounter';
 
 	if(checkAccess($args[0])){
@@ -898,7 +897,7 @@ function _ImageAdd($args,$type){
 				# Find the last inserted primary key based on the db type
 				$picnr = $img->LastInsertPK('nr',$pknr);
 				$picfilename = $picnr.'.'.$picext;
-				
+
 				if(!is_dir($d)){
 					// if $d directory not exist create it with CHMOD 777
 					mkdir($d,0777);
@@ -943,7 +942,7 @@ function EMRImageURLList($args){
 
 		$d = $fotoserver_localpath.$picdir;
 		$sql="SELECT nr,mime_type FROM $img->coretable WHERE encounter_nr=".$args[1];
-		
+
 		if($buff=$db->Execute($sql)) {
 			if($rec_count=$buff->RecordCount()) {
 				while($row=$buff->FetchRow()){

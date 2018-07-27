@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System beta 2.0.1 - 2004-07-04
 * GNU General Public License
 * Copyright 2002,2003,2004,2005,2006 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -19,7 +19,8 @@ $local_user='aufnahme_user';
 require($root_path.'include/core/inc_front_chain_lang.php');
 
 //$db->debug=true;
-
+$error=0;
+$error_person_exists=0;
 $thisfile=basename(__FILE__);
 $default_filebreak=$root_path.'main/startframe.php'.URL_APPEND;
 
@@ -45,18 +46,17 @@ $target='entry';
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
-
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 # Title in the toolbar
 
  $smarty->assign('sToolbarTitle',$LDPatientRegister);
-
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'pers_tree.gif','0').'>');
  # href for help button
  $smarty->assign('pbHelp',"javascript:gethelp('submenu1.php','$LDPatientRegister')");
-
  $smarty->assign('breakfile',$breakfile);
-
  # Window bar title
  $smarty->assign('title',$LDPatientRegister);
+ $smarty->assign('sWindowTitle',$LDPatientRegister);
 
  $smarty->assign('sOnLoadJs',"if (window.focus) window.focus();");
 
@@ -74,7 +74,8 @@ require_once($root_path.'include/care_api_classes/class_gui_input_person.php');
 
 $inperson = new GuiInputPerson;
 
-$inperson->setPID($pid);
+if (isset($pid)) $inperson->setPID($pid);
+if (!isset($sTemp)) $sTemp='';
 $inperson->pretext = $sTemp;
 $inperson->setDisplayFile('patient_register_show.php');
 
@@ -91,10 +92,8 @@ else $sCancel.='aufnahme_pass.php';
 $sCancel.=URL_APPEND.'><img '.createLDImgSrc($root_path,'cancel.gif','0').' alt="'.$LDCancelClose.'"></a>';
 
 $smarty->assign('pbCancel',$sCancel);
-
 $smarty->assign('sMainBlockIncludeFile','registration_admission/reg_input.tpl');
 
 $smarty->display('common/mainframe.tpl');
 
 ?>
-

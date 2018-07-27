@@ -1,7 +1,7 @@
 <?php
-//error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
@@ -187,11 +187,35 @@ require($root_path.'include/core/inc_css_a_hilitebu.php');
  -->
   </tr>
   <tr>
-	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><?php echo 'XML-RPC Interface'; ?></b> </FONT></td>
+	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><?php echo 'KwaMoja ERP Interface'; ?></b> </FONT></td>
   </tr>
   <tr>
  	<td bgcolor="#ffffff"><FONT  color="#0000cc" FACE="verdana,arial" size=2>&nbsp;&nbsp;&nbsp;<img <?php echo createComIcon($root_path,'redpfeil.gif','0','absmiddle') ?>>
 	<a href="edv_xmlrpc_interface_weberp.php?sid=<?php echo $sid."&lang=".$lang ?>" target="SYSADMIN_WFRAME"><?php  echo 'Configuration';?>
+	</a></FONT><br>
+	</td>
+<!--  	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><a href="phpmyadmin-start.php?sid=<?php echo $sid."&lang=".$lang ?>"><?php echo $LDMySQLManage ?></a></b> </FONT></td>
+ -->
+  </tr>
+  <tr>
+ 	<td bgcolor="#ffffff"><FONT  color="#0000cc" FACE="verdana,arial" size=2>&nbsp;&nbsp;&nbsp;<img <?php echo createComIcon($root_path,'redpfeil.gif','0','absmiddle') ?>>
+	<a href="edv_kwamoja_stock_types.php?sid=<?php echo $sid."&lang=".$lang ?>" target="SYSADMIN_WFRAME"><?php  echo 'KwaMoja Stock Types';?>
+	</a></FONT><br>
+	</td>
+<!--  	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><a href="phpmyadmin-start.php?sid=<?php echo $sid."&lang=".$lang ?>"><?php echo $LDMySQLManage ?></a></b> </FONT></td>
+ -->
+  </tr>
+  <tr>
+ 	<td bgcolor="#ffffff"><FONT  color="#0000cc" FACE="verdana,arial" size=2>&nbsp;&nbsp;&nbsp;<img <?php echo createComIcon($root_path,'redpfeil.gif','0','absmiddle') ?>>
+	<a href="edv_kwamoja_admission_process.php?sid=<?php echo $sid."&lang=".$lang ?>" target="SYSADMIN_WFRAME"><?php  echo 'Registration / Admission Process';?>
+	</a></FONT><br>
+	</td>
+<!--  	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><a href="phpmyadmin-start.php?sid=<?php echo $sid."&lang=".$lang ?>"><?php echo $LDMySQLManage ?></a></b> </FONT></td>
+ -->
+  </tr>
+  <tr>
+ 	<td bgcolor="#ffffff"><FONT  color="#0000cc" FACE="verdana,arial" size=2>&nbsp;&nbsp;&nbsp;<img <?php echo createComIcon($root_path,'redpfeil.gif','0','absmiddle') ?>>
+	<a href="edv_kwamoja_default_configs.php?sid=<?php echo $sid."&lang=".$lang ?>" target="SYSADMIN_WFRAME"><?php  echo 'KwaMoja Default Configuration Items';?>
 	</a></FONT><br>
 	</td>
 <!--  	<td bgcolor="#e9e9e9"><FONT  color="#0000cc" FACE="verdana,arial" size=2><b><a href="phpmyadmin-start.php?sid=<?php echo $sid."&lang=".$lang ?>"><?php echo $LDMySQLManage ?></a></b> </FONT></td>

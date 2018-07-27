@@ -28,7 +28,7 @@ class GuiSearchPerson {
 	# Default value for the maximum nr of rows per block displayed, define this to the value you wish
 	# In normal cases the value is derived from the db table "care_config_global" using the "pagin_insurance_list_max_block_rows" element.
 	var $max_block_rows =30 ;
-	
+
 	# Set to TRUE if you want to show the option to select  inclusion of the first name in universal searches
 	# This would give the user a chance to shut the search for first names and makes the search faster, but the user has one element more to consider
 	# If set to FALSE the option will be hidden and both last name and first names will be searched, resulting to slower search
@@ -65,7 +65,7 @@ class GuiSearchPerson {
 
 	# Search key buffer
 	var $searchkey='';
-	
+
 	# Optional url parameter to append to target url
 	var $targetappend ='';
 
@@ -77,16 +77,16 @@ class GuiSearchPerson {
 
 	# script parameters buffer
 	var $script_vars = array();
-	
+
 	# Tipps tricks flag
 	var $showtips = TRUE;
-	
+
 	var $closefile='main/startframe.php';
 	var $thisfile ='' ;
 	var $cancelfile = 'main/startframe.php';
 	var $targetfile = '';
 	var $searchfile = '';
-	
+
 	# smarty template
 	var $smarty;
 
@@ -96,7 +96,7 @@ class GuiSearchPerson {
 	/**
 	* Constructor
 	*/
-	function GuiSearchPerson($target='',$filename='',$cancelfile=''){
+	function __construct($target='',$filename='',$cancelfile=''){
 		global $thisfile, $root_path;
 		if(empty($filename)) $this->thisfile = $thisfile;
 			else $this->thisfile = $filename;
@@ -149,13 +149,17 @@ class GuiSearchPerson {
 
 	function display($skey=''){
 		global 	$db, $searchkey, $root_path,  $firstname_too, $_POST, $_GET,
-				$sid, $lang, $mode,$totalcount, $pgx, $odir, $oitem, $_SESSION,
+				$sid, $lang, $mode,$totalcount, $pgx, $odir, $oitem, $_SESSION,$theme_com_icon,
 				$dbf_nodate,  $user_origin, $parent_admit, $status, $target, $origin;
 
-		$this->thisfile = $filename;
+		if (isset($filename)) {
+			$this->thisfile = $filename;
+		} else {
+			$this->filename='';
+		}
 		$this->searchkey = $skey;
 		$this->mode = $mode;
-		
+
 		if(empty($this->targetfile)){
 			$withtarget = FALSE;
 			$navcolspan = 5;
@@ -165,7 +169,7 @@ class GuiSearchPerson {
 		}
 
 		if(!empty($skey)) $searchkey = $skey;
-		
+
 		# Load the language tables
 		$lang_tables =$this->langfile;
 		include($root_path.'include/core/inc_load_lang_tables.php');
@@ -202,7 +206,7 @@ class GuiSearchPerson {
 		}
 
 		//$db->debug=true;
-			
+
 		if(!defined('SHOW_FIRSTNAME_CONTROLLER')) define('SHOW_FIRSTNAME_CONTROLLER',$this->show_firstname_controller);
 
 		if(SHOW_FIRSTNAME_CONTROLLER){
@@ -218,14 +222,14 @@ class GuiSearchPerson {
 
 		}
 		if(($this->mode=='search' || $this->mode=='paginate') && !empty($searchkey)){
-			
+
 			# Translate *? wildcards
 			$searchkey=strtr($searchkey,'*?','%_');
 
 			include_once($root_path.'include/core/inc_date_format_functions.php');
 
 			include_once($root_path.'include/care_api_classes/class_person.php');
-			$person=& new Person();
+			$person= new Person();
 
 			# Set the sorting directive
 			if(isset($oitem)&&!empty($oitem)) $sql3 =" ORDER BY $oitem $odir";
@@ -290,7 +294,7 @@ class GuiSearchPerson {
 
 
 		##############  Here starts the html output
-		
+
 		# Start Smarty templating here
 		# Create smarty object without initiliazing the GUI (2nd param = FALSE)
 
@@ -298,8 +302,13 @@ class GuiSearchPerson {
 		$this->smarty = new smarty_care('common',FALSE);
 
 		# Output any existing text before the search block
-		if(!empty($this->pretext)) $this->smarty->assign('sPretext',$this->pretext);
-
+		if(!empty($this->pretext)) {
+			$this->smarty->assign('sPretext',$this->pretext);
+		} else {
+			$this->smarty->assign('sPretext','');
+		}
+		$this->smarty->assign('LDSearchFound','');
+		$this->smarty->assign('sPostText','');
 		# Show tips and tricks link and the javascript
 		if($this->showtips){
 			ob_start();
@@ -339,7 +348,7 @@ class GuiSearchPerson {
 		# Prepare the form params
 		#
 		$sTemp = 'method="post" name="searchform';
-		if($searchform_count) $sTemp = $sTemp."_".$searchform_count;
+		if(isset($searchform_count)) $sTemp = $sTemp."_".$searchform_count;
 		$sTemp = $sTemp.'" onSubmit="return chkSearch(this)"';
 		 if(isset($search_script) && $search_script!='') $sTemp = $sTemp.' action="'.$search_script.'"';
 		$this->smarty->assign('sFormParams',$sTemp);
@@ -361,6 +370,12 @@ class GuiSearchPerson {
 		#
 		# Prepare the hidden inputs
 		#
+		if (!isset($noresize)) $noresize='';
+		if (!isset($user_origin)) $user_origin='';
+		if (!isset($origin)) $origin='';
+		if (!isset($retpath)) $retpath='';
+		if (!isset($aux1)) $aux1='';
+		if (!isset($ipath)) $ipath='';
 		$this->smarty->assign('sHiddenInputs','<input type="image" '.createLDImgSrc($root_path,'searchlamp.gif','0','absmiddle').'>
 				<input type="hidden" name="sid" value="'.$sid.'">
 				<input type="hidden" name="lang" value="'.$lang.'">
@@ -391,9 +406,10 @@ class GuiSearchPerson {
 				else $this->smarty->assign('LDSearchFound',str_replace('~nr~','0',$LDSearchFound));
 		}
 
-		if ($linecount){
-			
+		if (isset($linecount)){
+
 			$this->smarty->assign('bShowResult',TRUE);
+			$this->smarty->assign('sHiddenBarcode',TRUE);
 
 			$img_male=createComIcon($root_path,'spm.gif','0');
 			$img_female=createComIcon($root_path,'spf.gif','0');
@@ -404,6 +420,7 @@ class GuiSearchPerson {
 			$this->smarty->assign('LDFirstName',$pagen->makeSortLink($LDFirstName,'name_first',$oitem,$odir,$this->targetappend));
 			$this->smarty->assign('LDBday',$pagen->makeSortLink($LDBday,'date_birth',$oitem,$odir,$this->targetappend));
 			$this->smarty->assign('LDZipCode',$pagen->makeSortLink($LDZipCode,'addr_zip',$oitem,$odir,$this->targetappend));
+
 			if(!empty($this->targetfile)){
 				$this->smarty->assign('LDOptions',$LDOptions);
 			}
@@ -414,7 +431,7 @@ class GuiSearchPerson {
 			$sTemp = '';
 			$toggle=0;
 			while($zeile=$ergebnis->FetchRow()){
-						
+
 				if($zeile['status']=='' || $zeile['status']=='normal'){
 
 					$this->smarty->assign('toggle',$toggle);
@@ -434,7 +451,7 @@ class GuiSearchPerson {
 					#
 					if($zeile['death_date']&&$zeile['death_date']!=$dbf_nodate) $this->smarty->assign('sCrossIcon','<img '.createComIcon($root_path,'blackcross_sm.gif','0','absmiddle').'>');
 						else $this->smarty->assign('sCrossIcon','');
-					
+
 					$this->smarty->assign('sBday',formatDate2Local($zeile['date_birth'],$date_format));
 
 					$this->smarty->assign('sZipCode',$zeile['addr_zip']);
@@ -464,12 +481,14 @@ class GuiSearchPerson {
 
 			$this->smarty->assign('sPreviousPage',$pagen->makePrevLink($LDPrevious,$this->targetappend));
 			$this->smarty->assign('sNextPage',$pagen->makeNextLink($LDNext,$this->targetappend));
+		} else {
+			$this->smarty->assign('bShowResult',FALSE);
 		}
 		#
 		# Add eventual appending text block
 		#
 		if(!empty($this->posttext)) $this->smarty->assign('sPostText',$this->posttext);
-		
+
 		#
 		# Displays the search page
 		#

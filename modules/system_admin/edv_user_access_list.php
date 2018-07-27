@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -46,11 +46,11 @@ if($ergebnis=$db->Execute($sql)) {
 	$rows=$ergebnis->RecordCount();
 }
 require_once($root_path.'include/care_api_classes/class_access.php');
-$role = & new Access();
+$role =  new Access();
 
 require_once($root_path.'include/care_api_classes/class_department.php');
 $dept=new Department;
-$depts=&$dept->getAllActive();
+$depts=$dept->getAllActive();
 
 # Start Smarty templating here
  /**
@@ -61,10 +61,11 @@ $depts=&$dept->getAllActive();
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('system_admin');
-
-# Title in toolbar
+ $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
+ # Title in toolbar
  $smarty->assign('sToolbarTitle',$LDListActual);
-
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'padlock.gif','0').'>');
  # href for return button
  $smarty->assign('pbBack',$returnfile);
 
@@ -87,7 +88,7 @@ ob_start();
 <script type="text/javascript" src="../../js/scriptaculous/src/builder.js"></script>
 <?php
 
-if ($remark=='itemdelete') echo '<img '.createMascot($root_path,'mascot1_r.gif','0','absmiddle').'><font class="warnprompt"> '.$LDAccessDeleted.'<br>'.$LDFfActualAccess.' </font><p>';
+if (isset($remark) and $remark=='itemdelete') echo '<img '.createMascot($root_path,'mascot1_r.gif','0','absmiddle').'><font class="warnprompt"> '.$LDAccessDeleted.'<br>'.$LDFfActualAccess.' </font><p>';
 
         echo '
 				<table border=0 class="frame" cellpadding=0 cellspacing=0>
@@ -99,15 +100,15 @@ if ($remark=='itemdelete') echo '<img '.createMascot($root_path,'mascot1_r.gif',
 		echo "
 					<td colspan=8><font color=\"#800000\"><b>$LDActualAccess</b></font></td>";
         echo "
-					</tr>"; 
+					</tr>";
         $sRow = '<tr class="wardlisttitlerow">';
 		for($i=0;$i<sizeof($LDAccessIndex);$i++)
-			$sRow .= "<td><b>".$LDAccessIndex[$i]."</b></td>"; 
-		/* Load common icons */	
+			$sRow .= "<td><b>".$LDAccessIndex[$i]."</b></td>";
+		/* Load common icons */
 		$img_padlock=createComIcon($root_path,'padlock.gif','0');
 		$img_arrow=createComIcon($root_path,'arrow-gr.gif','0');
 			$old_role = '';
-			while ($zeile=$ergebnis->FetchRow()) {  
+			while ($zeile=$ergebnis->FetchRow()) {
 				if($zeile['user_role'] != $old_role) {
 					$role->roleExists($zeile['user_role']);
 					echo '</table> </div></td></tr>';
@@ -122,37 +123,37 @@ if ($remark=='itemdelete') echo '<img '.createMascot($root_path,'mascot1_r.gif',
 							<td>".$zeile['name']."</td>\n
 							<td>".$zeile['login_id']."</td>\n
 							<td>";
-				
+
 				//gjergji .. new dept management
 				$userDept = unserialize($zeile['dept_nr']);
 				$sTemp = '';
 				reset($depts);
         		if($depts&&is_array($depts)) {
-        			while(list($x,$v)=each($depts)) { 
+        			while(list($x,$v)=each($depts)) {
             			 if(in_array($v['nr'],$userDept)) {
-                			 if(isset($$v['LD_var']) && $$v['LD_var'])  { $sTemp = $sTemp . '<b>' . $$v['LD_var'] . '</b><br>'; }
+                			 if(isset(${$v['LD_var']}) && ${$v['LD_var']})  { $sTemp = $sTemp . '<b>' . ${$v['LD_var']} . '</b><br>'; }
                 				 else  { $sTemp = $sTemp . '<b>' . $v['name_formal'] . '</b><br>'; }
             			 }
             	 	 }
-        		}	
-        		//gjergji : end new dept management		 
+        		}
+        		//gjergji : end new dept management
 				echo $sTemp . "</td>\n<td>\n";
 				if ($zeile['lockflag'])
 					   echo '
 					   		<img '.$img_padlock.'>'; else echo '<img '.$img_arrow.'>';
 				echo "
 							</td>\n <td>";
-				
+
 				/* Display the permitted areas */
 				$area=explode(' ',$zeile['permission']);
 				for($n=0;$n<sizeof($area);$n++) echo $area_opt[$area[$n]].'<br>';
-															
+
 				echo '</td>
 						<td> '.formatDate2Local($zeile['s_date'],$date_format).' / '.convertTimeToLocal($zeile['s_time']).' </td>';
-		
+
 				echo '
 						<td>'.$zeile['create_id'].'</td>';
-						
+
 	            echo "
 						<td>
 						<a href=edv_user_access_edit.php?sid=$sid&lang=$lang&mode=edit&userid=".str_replace(' ','+',$zeile['login_id'])." title=\"$LDChange\"> $LDInitChange</a> \n
@@ -175,7 +176,7 @@ if ($remark=='itemdelete') echo '<img '.createMascot($root_path,'mascot1_r.gif',
 
 <p>
 
-<FORM method="post" action="<?php if($ck_edvzugang_src=="listpass") echo "edv-accessplan-list-pass.php"; else echo "edv_user_access_edit.php"; ?>" >
+<FORM method="post" action="<?php if(isset($ck_edvzugang_src) and $ck_edvzugang_src=="listpass") echo "edv_user_access_list.php"; else echo "edv_user_access_edit.php"; ?>" >
 	<input type=hidden name="sid" value="<?php echo $sid; ?>">
 	<input type=hidden name="lang" value="<?php echo $lang; ?>">
 	<input type=hidden name="remark" value="fromlist">

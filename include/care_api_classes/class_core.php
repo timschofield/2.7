@@ -81,6 +81,13 @@ class Core {
 	*/
 	var $normal_stat="'','normal'";
 	/**
+	* Holds the last inserted private key
+	* Needed when SQL entered as a transaction
+	* @var string
+	* @access private
+	*/
+	var $last_insert='';
+	/**
 	* Sets the coretable variable to the name of the database table.
 	*
 	* This points the core object to that database table and all core routines will use this table
@@ -169,6 +176,7 @@ class Core {
 		if(!empty($sql)) $this->sql=$sql;
 		$db->BeginTrans();
 		$this->ok=$db->Execute($this->sql);
+		$this->last_insert=$db->Insert_ID();;
 		if($this->ok) {
 			$db->CommitTrans();
 			return TRUE;
@@ -192,7 +200,7 @@ class Core {
 			// deleted && ($this->data_array[$v]!='') gives me errors when var value == 0
 			if(isset($this->data_array[$v]) ) {
 				$this->buffer_array[$v]=$this->data_array[$v];
-				if($v=='create_time' && $this->data['create_time']!='') $this->buffer_array[$v] = date('YmdHis');
+				if($v=='create_time' && $this->data_array['create_time']!='') $this->buffer_array[$v] = date('YmdHis');
 			}
 		}
 		# Reset the source array index to start
@@ -344,9 +352,9 @@ class Core {
 		if(!is_array($array)){ return FALSE;}
 		while(list($x,$v)=each($array)) {
 			# use backquoting for mysql and no-quoting for other dbs
-			if ($dbtype=='mysql') $index.="`$x`,";
+			if ($dbtype=='mysqli') $index.="`$x`,";
 				else $index.="$x,";
-				
+
 			if(stristr($v,$concatfx)||stristr($v,'null')) $values.=" $v,";
 				else $values.="'$v',";
 		}
@@ -379,9 +387,9 @@ class Core {
 		if(empty($item_nr)||($isnum&&!is_numeric($item_nr))) return FALSE;
 		while(list($x,$v)=each($array)) {
 			# use backquoting for mysql and no-quoting for other dbs.
-			if ($dbtype=='mysql') $elems.="`$x`=";
+			if ($dbtype=='mysqli') $elems.="`$x`=";
 				else $elems.="$x=";
-			
+
 			if(stristr($v,$concatfx)||stristr($v,'null')) $elems.=" $v,";
 				else $elems.="'$v',";
 		}
@@ -465,7 +473,7 @@ class Core {
 	* @param boolean Signals the type of the data contained in the param $data.  FALSE=nonbinary data, TRUE=binary
 	* @return boolean
 	*/
-	function saveDBCache($id,&$data,$bin=FALSE){
+	function saveDBCache($id,$data,$bin=FALSE){
 		if($bin) $elem='cbinary';
 			else $elem='ctext';
 		$this->sql="INSERT INTO care_cache (id,$elem,tstamp) VALUES ('$id','$data','".date('YmdHis')."')";
@@ -519,7 +527,7 @@ class Core {
 		if(empty($batch_nr) || empty($encounter_nr)) return FALSE;
 		$this->sql="DELETE  FROM $this->coretable WHERE batch_nr = '$batch_nr' AND encounter_nr = '$encounter_nr'";
 		return $this->Transact();
-	}	
+	}
 	/**
 	* Returns the  core field names of the core table in an array.
 	* @access public
@@ -607,7 +615,7 @@ class Core {
 			return $oid;
 		}else{
 			switch($dbtype){
-				case 'mysql': return $oid;
+				case 'mysqli': return $oid;
 					break;
 				case 'postgres': return $this->postgre_Insert_ID($this->coretable,$pk,$oid);
 					break;
@@ -629,7 +637,7 @@ class Core {
 		global $dbtype;
 
 		switch($dbtype){
-			case 'mysql': return "CONCAT($fieldname,'$str')";
+			case 'mysqli': return "CONCAT($fieldname,'$str')";
 				break;
 			case 'postgres': return "$fieldname || '$str'";
 				break;
@@ -671,7 +679,7 @@ class Core {
 		global $dbtype;
 
 		switch($dbtype){
-			case 'mysql': return "REPLACE($fieldname,'$str1','$str2')";
+			case 'mysqli': return "REPLACE($fieldname,'$str1','$str2')";
 				break;
 				default: return "REPLACE($fieldname,'$str1','$str2')";
 		}

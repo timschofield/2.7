@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -39,10 +39,10 @@ if ($pyear=='') $pyear=date('Y');
 /* Establish db connection */
 if(!isset($db)||!$db) include($root_path.'include/core/inc_db_makelink.php');
 if($dblink_ok)
-	{	
-		if($mode=='save')
+	{
+		if(isset($mode) and $mode=='save')
 		{
-					
+
 					$arr_1_txt=array();
 					$arr_2_txt=array();
 					$arr_1_pnr=array();
@@ -54,21 +54,21 @@ if($dblink_ok)
 						$ddx="hr".$i;
 						$ax="a".$i;
 						$rx="r".$i;
-						
-						if(!empty($$ax)) $arr_1_txt[$ax]=$$ax;
-						if(!empty($$rx)) $arr_2_txt[$rx]=$$rx;
-						if(!empty($$tdx)) $arr_1_pnr[$tdx]=$$tdx;
-						if(!empty($$ddx)) $arr_2_pnr[$ddx]=$$ddx;
-						
+
+						if(!empty(${$ax})) $arr_1_txt[$ax]=${$ax};
+						if(!empty(${$rx})) $arr_2_txt[$rx]=${$rx};
+						if(!empty(${$tdx})) $arr_1_pnr[$tdx]=${$tdx};
+						if(!empty(${$ddx})) $arr_2_pnr[$ddx]=${$ddx};
+
 					}
-					
+
 					$ref_buffer=array();
 					// Serialize the data
 					$ref_buffer['duty_1_txt']=serialize($arr_1_txt);
 					$ref_buffer['duty_2_txt']=serialize($arr_2_txt);
 					$ref_buffer['duty_1_pnr']=serialize($arr_1_pnr);
 					$ref_buffer['duty_2_pnr']=serialize($arr_2_pnr);
-					
+
 					$ref_buffer['dept_nr']=$dept_nr;
 					$ref_buffer['role_nr']=15;
 					$ref_buffer['year']=$pyear;
@@ -80,7 +80,7 @@ if($dblink_ok)
 						$ref_buffer['modify_time']=date('YmdHis');
 						// Point to the internal data array
 						$pers_obj->setDataArray($ref_buffer);
-															
+
 						if($pers_obj->updateDataFromInternalArray($dpoc_nr)){
 
 							# Remove the cache plan
@@ -89,7 +89,7 @@ if($dblink_ok)
 							}
 							header("location:$thisfile?sid=$sid&lang=$lang&saved=1&dept_nr=$dept_nr&pyear=$pyear&pmonth=$pmonth&retpath=$retpath");
 							exit;
-						}else echo "<p>".$pers_obj->getLastQuery."<p>$LDDbNoSave"; 
+						}else echo "<p>".$pers_obj->getLastQuery."<p>$LDDbNoSave";
 					} // else create new entry
 					else
 					{
@@ -110,22 +110,27 @@ if($dblink_ok)
 								exit;
 							}else{
 								echo "<p>".$pers_obj->getLastQuery."<p>$LDDbNoSave";
-							} 
+							}
 					}//end of else
-						
+
 		 }// end of if(mode==save)
 		 else
 		 {
-		 	if($dutyplan=&$pers_obj->getDOCDutyplan($dept_nr,$pyear,$pmonth)){
-			
+		 	if($dutyplan=$pers_obj->getDOCDutyplan($dept_nr,$pyear,$pmonth)){
+
 				$aelems=unserialize($dutyplan['duty_1_txt']);
 				$relems=unserialize($dutyplan['duty_2_txt']);
 				$a_pnr=unserialize($dutyplan['duty_1_pnr']);
 				$r_pnr=unserialize($dutyplan['duty_2_pnr']);
+			} else {
+				$aelems=array();
+				$relems=array();
+				$a_pnr=array();
+				$r_pnr=array();
 			}
 	 	}
 }
-  else { echo "$LDDbNoLink<br>"; } 
+  else { echo "$LDDbNoLink<br>"; }
 
 
 $maxdays=date("t",mktime(0,0,0,$pmonth,1,$pyear));
@@ -135,10 +140,10 @@ $firstday=date("w",mktime(0,0,0,$pmonth,1,$pyear));
 function makefwdpath($path,$dpt,$mo,$yr,$saved)
 {
 	if ($path==1)
-	{	
+	{
 		$fwdpath='doctors-dienstplan.php?';
-		if($saved!="1") 
-		{  
+		if($saved!="1")
+		{
 			if ($mo==1) {$mo=12; $yr--;}
 				else $mo--;
 		}
@@ -150,7 +155,7 @@ function makefwdpath($path,$dpt,$mo,$yr,$saved)
 # Prepare page title
  $sTitle = "$LDMakeDutyPlan :: ";
  $LDvar=$dept_obj->LDvar();
- if(isset($$LDvar) && $$LDvar) $sTitle = $sTitle.$$LDvar;
+ if(isset(${$LDvar}) && ${$LDvar}) $sTitle = $sTitle.${$LDvar};
    else $sTitle = $sTitle.$dept_obj->FormalName();
 
 # Start Smarty templating here
@@ -163,12 +168,13 @@ function makefwdpath($path,$dpt,$mo,$yr,$saved)
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in toolbar
  $smarty->assign('sToolbarTitle',$sTitle);
 
  # href for help button
- $smarty->assign('pbHelp',"javascript:gethelp('docs_dutyplan_edit.php','$mode','$rows')");
+ $smarty->assign('pbHelp',"javascript:gethelp('docs_dutyplan_edit.php','','')");
 
 # href for return button
  $smarty->assign('pbBack','javascript:history.back();killchild();');
@@ -181,6 +187,7 @@ function makefwdpath($path,$dpt,$mo,$yr,$saved)
 
  # Window bar title
  $smarty->assign('sWindowTitle',$sTitle);
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'calendar.gif','0').'>');
 
  # Collect extra javascript
 
@@ -201,7 +208,7 @@ function popselect(elem,mode)
 	var tmonth=document.dienstplan.month.value;
 	var tyear=document.dienstplan.jahr.value;
 	urlholder="doctors-dienstplan-poppersonselect.php?elemid="+elem + "&dept_nr=<?php echo $dept_nr ?>&month="+tmonth+"&year="+tyear+ "&mode=" + mode + "&retpath=<?php echo $retpath ?>&user=<?php echo $ck_doctors_dienstplan_user."&lang=$lang&sid=$sid"; ?>";
-	
+
 	popselectwin=window.open(urlholder,"pop","width=" + ww + ",height=" + wh + ",menubar=no,resizable=yes,scrollbars=yes,dependent=yes");
 	window.popselectwin.moveTo((w/2)+80,(h/2)-(wh/2));
 }
@@ -217,7 +224,7 @@ function cal_update()
 	window.location.replace(filename);
 }
 </script>
-<?php 
+<?php
 
  $sTemp=ob_get_contents();
  ob_end_clean();
@@ -299,25 +306,33 @@ for ($i=1,$n=0,$wd=$firstday;$i<=$maxdays;$i++,$n++,$wd++)
 	$smarty->assign('iDayNr',$i);
 	$smarty->assign('LDShortDay',$LDShortDay[$wd]);
 
-	if ($aelems['a'.$n]=="") $smarty->assign('sIcon1','<img '.createComIcon($root_path,'warn.gif','0').'>');
+	if (!isset($aelems['a'.$n]) or $aelems['a'.$n]=="") $smarty->assign('sIcon1','<img '.createComIcon($root_path,'warn.gif','0').'>');
 		else $smarty->assign('sIcon1','<img '.createComIcon($root_path,'mans-gr.gif','0').'>');
-	$smarty->assign('sInput1','<input type="hidden" name="ha'.$n.'" value="'.$a_pnr['ha'.$n].'">
-		<input type="text" name="a'.$n.'" size="15" onFocus=this.select() value="'.$aelems['a'.$n].'">');
+	if (isset($a_pnr['ha'.$n])){
+		 $smarty->assign('sInput1','<input type="hidden" name="ha'.$n.'" value="'.$a_pnr['ha'.$n].'">
+			<input type="text" name="a'.$n.'" size="15" onFocus=this.select() value="'.$aelems['a'.$n].'">');
+	} else {
+		 $smarty->assign('sInput1','');
+	}
 
 	$smarty->assign('sPopWin1','<a href="javascript:popselect(\''.$n.'\',\'a\')">
 	<button onclick="javascript:popselect(\''.$n.'\',\'a\')"><img '.createComIcon($root_path,'patdata.gif','0').' alt="'.$LDClk2Plan.'"></button></a>');
 
-	if ($relems['r'.$n]=="") $smarty->assign('sIcon2','<img '.createComIcon($root_path,'warn.gif','0').'>');
+	if (!isset($relems['a'.$n]) or $relems['r'.$n]=="") $smarty->assign('sIcon2','<img '.createComIcon($root_path,'warn.gif','0').'>');
 		else $smarty->assign('sIcon2','<img '.createComIcon($root_path,'mans-red.gif','0').'>');
-	$smarty->assign('sInput2','<input type="hidden" name="hr'.$n.'" value="'.$r_pnr['hr'.$n].'">
-	<input type="text" size="15" name="r'.$n.'" onFocus=this.select() value="'.$relems['r'.$n].'">');
+	if (isset($r_pnr['hr'.$n])) {
+		$smarty->assign('sInput2','<input type="hidden" name="hr'.$n.'" value="'.$r_pnr['hr'.$n].'"><input type="text" size="15" name="r'.$n.'" onFocus=this.select() value="'.$relems['r'.$n].'">');
+	} else {
+		$smarty->assign('sInput2','<input type="text" size="15" name="r'.$n.'" onFocus=this.select() value="">');
+	}
+
 
 	$smarty->assign('sPopWin2','<a href="javascript:popselect(\''.$n.'\',\'r\')">
 	<button onclick="javascript:popselect(\''.$n.'\',\'r\')"><img '.createComIcon($root_path,'patdata.gif','0').' alt="'.$LDClk2Plan.'"></button></a>');
 	if($wd==6) $wd=-1;
-	
+
 	# Buffer each row and collect to a string
-	
+
 	ob_start();
 		$smarty->display('common/duty_plan_entry_row.tpl');
 		$sTemp = $sTemp.ob_get_contents();

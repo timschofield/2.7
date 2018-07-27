@@ -1,12 +1,12 @@
 <?php
-//error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System beta 2.0.1 - 2004-07-04
 * GNU General Public License
 * Copyright 2002,2003,2004,2005,2006 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -26,7 +26,6 @@ $admissionfile='aufnahme_start.php'.URL_APPEND;
 
 # Resolve PID
 if((!isset($pid)||!$pid) && $_SESSION['sess_pid']) $pid=$_SESSION['sess_pid'];
-
 # Save session data
 $_SESSION['sess_path_referer']=$top_dir.$thisfile;
 $_SESSION['sess_file_return']=$thisfile;
@@ -39,7 +38,7 @@ $_SESSION['sess_en']=0;
 
 # Create the person show GUI
 require_once($root_path.'include/care_api_classes/class_gui_person_show.php');
-$person = & new GuiPersonShow;
+$person = new GuiPersonShow;
 
 # Set PID to load the data
 $person->setPID($pid);
@@ -62,13 +61,14 @@ $death_date = $person->DeathDate();
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in the toolbar
+ $smarty->assign('sWindowTitle',$LDPatientRegister);
  $smarty->assign('sToolbarTitle',$LDPatientRegister);
-
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'pers_tree.gif','0').'>');
  # href for help button
  $smarty->assign('pbHelp',"javascript:gethelp('submenu1.php','$LDPatientRegister')");
-
  $smarty->assign('breakfile',$breakfile);
 
  # Window bar title
@@ -128,8 +128,8 @@ $smarty->assign('sRegOptions',$sTemp);
 
 # If the data is not new , show new search button
 
-if (!$newdata) { 
-
+if (!$newdata) {
+$target = $_REQUEST['target'];
 	if($target=="search") $newsearchfile='patient_register_search.php'.URL_APPEND;
 		else $newsearchfile='patient_register_archive.php'.URL_APPEND;
 
@@ -150,18 +150,12 @@ if($current_encounter){
 	$smarty->assign('pbAdmitOutpatient',"<a href=\"$admissionfile&pid=$pid&origin=patreg_reg&encounter_class_nr=2\"><img ".createLDImgSrc($root_path,'admit_outpatient.gif','0','absmiddle')."></a>");
 }
 //gjergji
-$smarty->assign('pbAdmitPrintout',"<a href=". $root_path."modules/pdfmaker/registration/regdata_admit.php".URL_APPEND."&pid=".$pid ." target=_blank><img ".createLDImgSrc($root_path,'printout.gif','0','absmiddle')."></a>'");
+$smarty->assign('pbAdmitPrintout',"<a href=". $root_path."modules/pdfmaker/registration/regdata_admit.php".URL_APPEND."&pid=".$pid ." target=_blank><img ".createLDImgSrc($root_path,'printout.gif','0','absmiddle')."></a>");
 //$smarty->assign('pbAdmitPrintout',"<a href=". $root_path."modules/registration_admission/reports/sample.php".URL_APPEND."&pid=".$pid . "><img ".createLDImgSrc($root_path,'printout.gif','0','absmiddle')."></a>'");
 //end :  gjergji
 # Create new button to fresh input form
-$sNewRegBuffer='
-<form action="patient_register.php" method=post>
-<input type=submit value="'.$LDRegisterNewPerson.'">
-<input type=hidden name="sid" value="'.$sid.'">
-<input type=hidden name="lang" value="'.$lang.'">
-</form>';
 
-$smarty->assign('pbRegNewPerson',$sNewRegBuffer);
+$smarty->assign('pbRegNewPerson','<a href="patient_register.php'.URL_APPEND.'"><img '.createLDImgSrc($root_path,'register.gif','0','absmiddle').'></a>');
 
 # Assign help links
 $smarty->assign('sSearchLink','<img '.createComIcon($root_path,'varrow.gif','0').'> <a href="patient_register_search.php'.URL_APPEND.'">'.$LDPatientSearch.'</a>');
@@ -173,6 +167,8 @@ if($_COOKIE['ck_login_logged'.$sid]) $sCancel.=$breakfile;
 $sCancel.=URL_APPEND.'><img '.createLDImgSrc($root_path,'cancel.gif','0').' alt="'.$LDCancelClose.'"></a>';
 
 $smarty->assign('pbCancel',$sCancel);
+$smarty->assign('pbNewSearch','');
+$smarty->assign('pbShowAdmData','');
 
 # Assign the page template to mainframe block
 $smarty->assign('sMainBlockIncludeFile','registration_admission/reg_show.tpl');

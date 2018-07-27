@@ -1,12 +1,12 @@
 <?php
-error_reporting ( E_COMPILE_ERROR | E_ERROR | E_CORE_ERROR ) ;
 require ('./roots.php') ;
 require ($root_path . 'include/core/inc_environment_global.php') ;
+error_reporting($ErrorLevel);
 /**
  * CARE2X Integrated Hospital Information System Deployment 2.2 - 2006-07-10
  * GNU General Public License
  * Copyright 2002,2003,2004,2005,2006 Elpidio Latorilla
- * elpidio@care2x.org, 
+ * elpidio@care2x.org,
  *
  * See the file "copy_notice.txt" for the licence notice
  */
@@ -22,7 +22,7 @@ require_once($root_path.'include/care_api_classes/class_core.php');
  */
 require ($root_path . 'include/core/inc_accessplan_areas_functions.php') ;
 require_once($root_path.'include/care_api_classes/class_access.php');
-$role = & new Access();
+$role = new Access();
 
 $breakfile = 'edv-system-admi-welcome.php' . URL_APPEND ;
 $returnfile = $_SESSION [ 'sess_file_return' ] . URL_APPEND ;
@@ -48,17 +48,17 @@ if ($mode != '') {
 			$error = 1 ;
 		}
 	}
-	
+
 	if (($mode == 'save' && ! $error) || ($mode == 'update' && ! $erroruser)) {
-		
+
 		/* Prepare the permission codes */
-		
+
 		$p_areas = '' ;
-		
+
 		while ( list ( $x, $v ) = each ( $_POST ) ) {
-			if (! ereg ( '_a_', $x ))
+			if (! preg_match ( '/_a_/', $x ))
 				continue ;
-			
+
 			if ($_POST [ $x ] != '')
 				$p_areas .= $v . ' ' ;
 		}
@@ -80,15 +80,15 @@ if ($mode != '') {
 						 )
 						 VALUES
 						 (
-						   '" . $role_name . "', 						
-						   '" . $p_areas . "',									
-						   'Created by " . $_SESSION [ 'sess_user_name' ] . " on " . '  ' . date ( 'Y-m-d' ) . ' ' . date ( 'H:i:s' ) . "', 
-						   '" . $_SESSION [ 'sess_user_name' ] . "',	
+						   '" . $role_name . "',
+						   '" . $p_areas . "',
+						   'Created by " . $_SESSION [ 'sess_user_name' ] . " on " . '  ' . date ( 'Y-m-d' ) . ' ' . date ( 'H:i:s' ) . "',
+						   '" . $_SESSION [ 'sess_user_name' ] . "',
 						   '" . date ( 'YmdHis' ) . "',
-						   '" . $_SESSION [ 'sess_user_name' ] . "', 	
-						   '" . date ( 'YmdHis' ) . "' 							
+						   '" . $_SESSION [ 'sess_user_name' ] . "',
+						   '" . date ( 'YmdHis' ) . "'
 						 )" ;
-			
+
 			} elseif ($role->roleExistsByName($role_name)) {
 				$sql = "UPDATE care_user_roles SET permission='$p_areas', modify_id='" . $_COOKIE [ $local_user . $sid ] . "'  WHERE id='$id'" ;
 				$sqlUsers = "UPDATE care_users SET permission='$p_areas', modify_id='" . $_COOKIE [ $local_user . $sid ] . "'  WHERE user_role='$id'" ;
@@ -115,7 +115,7 @@ if ($mode != '') {
 			$mode = 'error_noareas' ;
 		} // end if ($p_areas!="")
 	} // end of if($mode=="save"
-	
+
 	if ($mode == 'edit' || $mode == 'data_saved' || $edit) {
 		$sql = "SELECT id, role_name, permission FROM care_user_roles WHERE id='$id'" ;
 		if ($ergebnis = $db->Execute ( $sql )) {
@@ -137,10 +137,11 @@ if ($mode != '') {
 
 require_once ($root_path . 'gui/smarty_template/smarty_care.class.php') ;
 $smarty = new smarty_care ( 'system_admin' ) ;
+require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in toolbar
 $smarty->assign ( 'sToolbarTitle', $LDManageAccess ) ;
-
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'padlock.gif','0').'>');
 # href for return button
 $smarty->assign ( 'pbBack', $returnfile ) ;
 
@@ -163,7 +164,7 @@ ob_start () ;
 
 <?php
 if (($mode != '' || $error) && $mode != 'edit') {
-	
+
 	?>
 <table border=0>
 	<tr>
@@ -171,13 +172,13 @@ if (($mode != '' || $error) && $mode != 'edit') {
 		<td class="warnprompt">
 			<?php
 			if ($error)
-				echo $LDInputError ; 
+				echo $LDInputError ;
 			elseif ($mode == 'data_saved')
-				echo $LDRoleInfoSaved ; 
+				echo $LDRoleInfoSaved ;
 			elseif ($mode == 'error_save')
-				echo $LDRoleInfoNoSave ; 
+				echo $LDRoleInfoNoSave ;
 			elseif ($mode == 'error_noareas')
-				echo $LDNoAreas ; 
+				echo $LDNoAreas ;
 			elseif ($mode == 'error_double')
 				echo $LDRoleDouble ;
 			?>
@@ -191,7 +192,7 @@ if (($mode != '' || $error) && $mode != 'edit') {
 <FONT class="prompt">
 
 <?php
-if (($mode == "") and ($remark != 'fromlist')) {
+if (($mode == "") and (isset($remark) and $remark != 'fromlist')) {
 	$gtime = date ( 'H.i' ) ;
 	if ($gtime < '9.00')
 		echo $LDGoodMorning ;
@@ -205,11 +206,11 @@ if (($mode == "") and ($remark != 'fromlist')) {
 
 <p>
 <FORM action="edv_user_role_list.php" name="all">
-	<input type="hidden"name="sid" value="<?php echo $sid ;?>"> 
-	<input type="hidden" name="lang" value="<?php echo $lang ; ?>"> 
+	<input type="hidden"name="sid" value="<?php echo $sid ;?>">
+	<input type="hidden" name="lang" value="<?php echo $lang ; ?>">
 	<input type="submit" name=message value="<?php echo $LDListActual ?>">
 </form>
-<p>	
+<p>
 <form method="post" action="edv_user_role_edit.php" name="user">
 	<input type="image" <?php echo createLDImgSrc ( $root_path, 'savedisc.gif', '0', 'absmiddle' ) ?>>
 
@@ -233,7 +234,7 @@ if ($mode == 'data_saved' || $edit) {
 				<tr bgcolor="#dddddd">
 					<td><input type=hidden name=route value=validroute>
 						<?php
-						if ($errorname) {
+						if (isset($errorname)) {
 							echo "<font color=red > <b>$LDRole</b> : " ;
 						} else {
 							echo $LDRole . " : " ;
@@ -241,7 +242,7 @@ if ($mode == 'data_saved' || $edit) {
 						if ($edit) {
 							echo '<input type="hidden" name="role_name" value="' . $userRole [ 'role_name' ] . '">' . '<b>' . $userRole [ 'role_name' ] . '</b>' ;
 						} elseif (isset ( $is_employee ) && $is_employee) {
-							?> 
+							?>
 							<input name="role_name" type="hidden"
 								<?php
 							if ($role_name != "")
@@ -269,9 +270,9 @@ if ($mode == 'data_saved' || $edit) {
 <td  colspan=3>
 <?php
 if ($errorbereich) {
-	echo "<font color=red > <b>$LDAllowedAreaRole</b> </font>" ;
+	echo "<font color=red > <b>$LDAllowedArea</b> </font>" ;
 } else {
-	echo $LDAllowedAreaRole ;
+	echo $LDAllowedArea ;
 }
 ?>
 </td>
@@ -289,7 +290,7 @@ if ($errorbereich) {
 /* Loop through the elements of the access area tags */
 while ( list ( $x, $v ) = each ( $area_opt ) ) {
 	echo '<tr  bgcolor="white">' ;
-	
+
 	if (stristr ( 'title', $x )) { // If title print it out
 		echo '
      <td  valign=top bgcolor="#81eff5" colspan=5><FONT SIZE=2  FACE="Arial">' . $v . '</td>' ;
@@ -343,7 +344,7 @@ while ( list ( $x, $v ) = each ( $area_opt ) ) {
 			break ;
 		}
 	}
-	
+
 	echo '
   </tr>' ;
 }
@@ -370,7 +371,7 @@ while ( list ( $x, $v ) = each ( $area_opt ) ) {
 </td>
 </tr>
 </table>
-	
+
 	</td>
   </tr>
 </table>

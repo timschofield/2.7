@@ -1,7 +1,7 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
@@ -21,7 +21,7 @@ require ($root_path.'include/care_api_classes/class_access.php');
 
 $access = new Access($_SESSION['sess_login_userid'],$_SESSION['sess_login_pw']);
 $hideOrder = 0;
-if(ereg("_a_1_meddepotdbadmin",$access->PermissionAreas()))
+if(preg_match("/_a_1_meddepotdbadmin/",$access->PermissionAreas()))
 	$hideOrder = 1;
 
 # Start Smarty templating here

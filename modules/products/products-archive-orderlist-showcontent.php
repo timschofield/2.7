@@ -1,7 +1,7 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 ///$db->debug=1;
 /**
  * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
@@ -86,10 +86,10 @@ ob_start()
 ?>
 
 <script language="javascript">
-<!-- 
+<!--
 function pruf(d) {
 	kw=d.keyword;
-	var k=kw.value; 
+	var k=kw.value;
 	//if(k=="") return false;
 	if((k=="")||(k==" ")||(!(k.indexOf('%')))||(!(k.indexOf('_')))) {
 		kw.value="";
@@ -121,7 +121,7 @@ ob_start();
 ?>
 
 <ul>
-	<p><?php 
+	<p><?php
 	require('includes/inc_products_archive_search_form.php');
 
 	$rows=0;
@@ -170,7 +170,7 @@ ob_start();
 
 		$buffer=$dept[$content['dept_nr']]['LD_var'];
 
-		if(isset($$buffer)&&!empty($$buffer)) 	echo $$buffer;
+		if(isset(${$buffer})&&!empty(${$buffer})) 	echo ${$buffer};
 		else echo $dept[$content['dept_nr']]['name_formal'];
 
 		echo '</td>
@@ -217,11 +217,11 @@ ob_start();
 					<td>'.$content['pcs'].'</td>
 					<td ><nobr>X '.$content['proorder'].'</nobr></td>
 					<td>'.$content['dose'].'</td>
-					<td>'.$content['unit'].'</td>		
-					<td>'.$content['price'].'</td>		
-					<td>'.$content['price'] * $content['pcs'].'</td>	
+					<td>'.$content['unit'].'</td>
+					<td>'.$content['price'].'</td>
+					<td>'.$content['price'] * $content['pcs'].'</td>
 					<td>'.$content['expiry_date'] .'</td>
-					<td>'.$content['bestellnum'].'</td>';		
+					<td>'.$content['bestellnum'].'</td>';
 			echo '<td><a href="javascript:popinfo(\''.$content['bestellnum'].'\')" ><img '.$img_info.' alt="'.$LDOpenInfo.$content['artikelname'].'"></a></td>
 				</tr>';
 			$i++;
@@ -233,8 +233,8 @@ ob_start();
 	}
 	?> <a href="<?php echo $returnfile; ?>"><img
 	<?php echo createLDImgSrc($root_path,'back2.gif','0') ?>></a>
-	
-	
+
+
 	</table>
 
 </ul>

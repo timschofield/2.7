@@ -27,7 +27,8 @@ Contact author at: elpidio@care2x.org
 This notice also applies to other scripts which are integral to the functioning of CARE 2X within this directory and its top level directory
 A copy of this notice is also available as file named copy_notice.txt under the top level directory.
 */
-error_reporting(-1);
+//error_reporting(-1);
+
 define('FROM_ROOT',1);
 
 if(!isset($mask)) $mask=false;
@@ -38,7 +39,7 @@ if(!isset($sid)) $sid='';
 
 require('./roots.php');
 require('./include/core/inc_environment_global.php');
-
+error_reporting($ErrorLevel);
 //$db->debug=FALSE;
 
 # Register global session variables
@@ -84,15 +85,15 @@ $USERCONFIG=array();
 */
 
 require_once('./classes/phpSniff/phpSniff.class.php'); # Sniffer for PHP
-
+$_SESSION['department_nr']=array();
 function configNew(&$bn,&$bv,&$f,$i,&$uid)
 {
   global $HTTP_USER_AGENT;
   global $REMOTE_ADDR;
-
+  global $ErrorLevel;
   # We disable the error reporting, because Konqueror 3.0.3 causes a  runtime error output that stops the program.
   #  could be a bug in phpsniff .. hmmm?
-  $old_err_rep= error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
+  $old_err_rep= error_reporting($ErrorLevel);
 
   # Function rewritten by Thomas Wiedmann to use phpSniff class
 

@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'/include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -65,9 +65,9 @@ ob_start();
 $rows=0;
 
     if(isset($markseen) && $markseen) {
-	
+
 		include_once($root_path.'include/care_api_classes/class_core.php');
-		$core = & new Core;
+		$core =  Core;
 
 					$sql="UPDATE $dbtable SET seen=1
 							WHERE dept='$dept'
@@ -94,9 +94,9 @@ $rows=0;
         		if($ergebnis=$db->Execute($sql))
 				{
 					//count rows=linecount
-					$rows=$ergebnis->RecordCount();					
+					$rows=$ergebnis->RecordCount();
 				}else {
-					echo "<p>".$sql."$LDDbNoRead<br>"; 
+					echo "<p>".$sql."$LDDbNoRead<br>";
 				}
 
 if($rows)

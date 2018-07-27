@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -70,7 +70,7 @@ require('./gui_bridge/default/gui_tabs_personell_reg.php');
 
 require_once($root_path.'include/care_api_classes/class_gui_input_person.php');
 
-$inperson = & new GuiInputPerson;
+$inperson =  new GuiInputPerson();
 
 $inperson->setPID($pid);
 //$inperson->pretext = $sTemp;

@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -40,6 +40,7 @@ $_SESSION['sess_path_referer']=$top_dir.basename(__FILE__);
 
  # Create a helper smarty object without reinitializing the GUI
  $smarty2 = new smarty_care('common', FALSE);
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
  # Title in the title bar
  $smarty->assign('sToolbarTitle',$LDEDP);
@@ -49,13 +50,13 @@ $_SESSION['sess_path_referer']=$top_dir.basename(__FILE__);
 
  # href for the help button
  $smarty->assign('pbHelp',"javascript:gethelp('submenu1.php','$LDEDP')");
- 
+
  # href for the close button
  $smarty->assign('breakfile',$breakfile);
 
  # Window bar title
  $smarty->assign('title',$LDEDP);
-
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'padlock.gif','0').'>');
  # Prepare the submenu icons
 
  $aSubMenuIcon=array(createComIcon($root_path,'lockfolder.gif','0'),
@@ -81,7 +82,7 @@ $iRunner = 0;
 while(list($x,$v)=each($aSubMenuItem)){
 	$sTemp='';
 	ob_start();
-		if($cfg['icons'] != 'no_icon') $smarty2->assign('sIconImg','<img '.$aSubMenuIcon[$iRunner].'>');
+		if(!isset($cfg['icons']) or $cfg['icons'] != 'no_icon') $smarty2->assign('sIconImg','<img '.$aSubMenuIcon[$iRunner].'>');
 		$smarty2->assign('sSubMenuItem',$v);
 		$smarty2->assign('sSubMenuText',$aSubMenuText[$iRunner]);
 		$smarty2->display('common/submenu_row.tpl');

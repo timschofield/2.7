@@ -1,7 +1,7 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
  * CARE2X Integrated Hospital Information System beta 2.0.1 - 2004-07-04
  * GNU General Public License
@@ -23,7 +23,7 @@ function Cond($item,$k){
 		if($item == 'current_ward_nr') {
 			$buf=" $tab.$item $sql_LIKE '".$_POST[$item]."'";
 			if(!empty($where)) $where.=' AND '.$buf;
-			else $where=$buf;			
+			else $where=$buf;
 		} else {
 			$buf=" $tab.$item $sql_LIKE '".$_POST[$item]."%'";
 			if(!empty($where)) $where.=' AND '.$buf;
@@ -62,7 +62,7 @@ if($mode=='paginate'){
 }
 #Load and create paginator object
 require_once($root_path.'include/care_api_classes/class_paginator.php');
-$pagen=& new Paginator($pgx,$thisfile,$_SESSION['sess_searchkey'],$root_path);
+$pagen= new Paginator($pgx,$thisfile,$_SESSION['sess_searchkey'],$root_path);
 
 $GLOBAL_CONFIG=array();
 require_once($root_path.'include/care_api_classes/class_globalconfig.php');
@@ -126,7 +126,7 @@ if (isset($mode) && ($mode=='search'||$mode=='paginate')){
 			if(empty($where)) $where=$datecond;
 			else $where.=' AND '.$datecond;
 		}
-			
+
 		if(!empty($orwhere)) {
 			if(empty($where)) $where='('.$orwhere.')';
 			else $where.=' AND ('.$orwhere.') ';
@@ -188,7 +188,7 @@ if (isset($mode) && ($mode=='search'||$mode=='paginate')){
 		//echo "$sql $tab.$oitem $odir";
 		if($ergebnis=$db->SelectLimit("$sql $tab.$oitem $odir",$pagen->MaxCount(),$pagen->BlockStartIndex())){
 			$rows=$ergebnis->RecordCount();
-				
+
 			if(AUTOSHOW_ONERESULT){
 				if($rows==1){
 					# If result is single item, display the data immediately
@@ -197,9 +197,9 @@ if (isset($mode) && ($mode=='search'||$mode=='paginate')){
 					exit;
 				}
 			}
-				
+
 			$pagen->setTotalBlockCount($rows);
-				
+
 			# If more than one count all available
 			if(isset($totalcount) && $totalcount){
 				$pagen->setTotalDataCount($totalcount);
@@ -216,7 +216,7 @@ if (isset($mode) && ($mode=='search'||$mode=='paginate')){
 			$pagen->setSortItem($oitem);
 			$pagen->setSortDirection($odir);
 
-				
+
 		}else{
 			echo "$LDDbNoRead<p>$sql $tab.$oitem $odir";
 			$rows=0;

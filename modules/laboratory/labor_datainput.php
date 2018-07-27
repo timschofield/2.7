@@ -1,9 +1,9 @@
 <?php
-define(COL_MAX,6); # define here the maximum number of rows for displaying the parameters
+define('COL_MAX',6); # define here the maximum number of rows for displaying the parameters
 
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
  * CARE2X Integrated Hospital Information System Deployment 2.2 - 2006-07-10
  * GNU General Public License
@@ -254,14 +254,14 @@ ob_start();
 <script language="javascript" name="j1">
 <!--
 function pruf(d) {
-	if(d.job_id.value == "" ) {
+	if(d.job_id.value == '' ) {
 		alert("<?php echo $LDAlertJobId ?>");
 			d.job_id.focus();
 			 return false;
 		} else {
 			if(d.test_date){
-				if(!d.test_date.value)
-				{ alert("<?php echo $LDAlertTestDate ?>");
+				if(!d.test_date.value){
+                    alert("<?php echo $LDAlertTestDate ?>");
 					d.test_date.focus();
 					return false;
 				} else

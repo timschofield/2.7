@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -20,13 +20,13 @@ require_once($root_path.'include/care_api_classes/class_oproom.php');
 //$breakfile='dept_manage.php'.URL_APPEND;
 $breakfile=$root_path.'modules/system_admin/edv-system-admi-welcome.php'.URL_APPEND	;
 
-if($pday=='') $pday=date('d');
-if($pmonth=='') $pmonth=date('m');
-if($pyear=='') $pyear=date('Y');
+if(!isset($pday) or $pday=='') $pday=date('d');
+if(!isset($pmonth) or $pmonth=='') $pmonth=date('m');
+if(!isset($pyear) or $pyear=='') $pyear=date('Y');
 $t_date=$pday.'.'.$pmonth.'.'.$pyear;
 
 # Create the OR object
-$OR_obj=& new OPRoom;
+$OR_obj= new OPRoom;
 # Get all OR
 $OR_rooms=$OR_obj->AllORInfo();
 # Get the number or returned ORs
@@ -41,6 +41,7 @@ $rows=$OR_obj->LastRecordCount();
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in toolbar
  $smarty->assign('sToolbarTitle',"$LDOR :: $LDListConfig");
@@ -53,6 +54,7 @@ $rows=$OR_obj->LastRecordCount();
 
  # Window bar title
  $smarty->assign('sWindowTitle',"$LDOR :: $LDListConfig");
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'new_group.gif','0').'>');
 
 # Buffer page output
 ob_start();
@@ -63,7 +65,7 @@ ob_start();
 <tbody class="submenu">
   <tr class="wardlisttitlerow">
 <!-- 	<td bgcolor="#e9e9e9"></td>
- -->    
+ -->
  	<td align=center><?php echo $LDORNr ?></td>
  	<td align=center><?php echo $LDORName ?></td>
  	<td align=center><?php echo $LDOPTable ?></td>
@@ -73,7 +75,7 @@ ob_start();
     <td align=center><?php echo $LDOwnerWard ?></td>
     <td  align=center><?php echo $LDOwnerDept ?></td>
  </tr>
-  
+
 <?php
 if(is_object($OR_rooms)){
 
@@ -81,8 +83,8 @@ if(is_object($OR_rooms)){
 ?>
   <tr>
  	<td align=center><a href="or_info.php<?php echo URL_APPEND."&nr=".$ORoom['nr']."&OR_nr=".$ORoom['room_nr']; ?>">
-	<?php 
-		 echo $ORoom['room_nr']; 
+	<?php
+		 echo $ORoom['room_nr'];
 	?></a> </td>
     <td>
 <?php
@@ -97,7 +99,7 @@ if(is_object($OR_rooms)){
     <td  align=center><?php echo $ORoom['nr_of_beds'] ?> </td>
     <td><?php
 	 if($ORoom['is_temp_closed']=='1'){
-	 	echo '<font color="red">'.$LDYes.'</font>'; 
+	 	echo '<font color="red">'.$LDYes.'</font>';
 	 }else{
 		echo $LDNo;
 	}
@@ -109,13 +111,13 @@ if(is_object($OR_rooms)){
  -->    <td><?php  echo formatDate2Local($ORoom['date_create'],$date_format) ?> </td>
     <td><?php echo  $ORoom['ward_id'] ?> </td>
     <td>
-	<?php 
-	
+	<?php
+
 		$buf=$ORoom['LD_var'];
-		if(!empty($buf)&&isset($$buf)&&!empty($$buf)) echo $$buf;
+		if(!empty($buf)&&isset(${$buf})&&!empty(${$buf})) echo ${$buf};
 			else echo $ORoom['deptshort'];
 	?> </td>
- </tr> 
+ </tr>
 <?php
 	}
 }

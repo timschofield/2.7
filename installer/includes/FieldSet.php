@@ -3,13 +3,13 @@
  * FieldSet class
  *
  * A type sensitive Set implementation for PHP
- * 
+ *
  */
- 
+
 class FieldSet extends BaseSet{
 
-	function FieldSet(){
-		parent::BaseSet('Field');
+	function __construct(){
+		parent::__construct('Field');
 	}
 }
 ?>

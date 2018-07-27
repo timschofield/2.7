@@ -117,11 +117,11 @@ $LDMedocsElements[8]='Time';
 
 $LDStartNewDoc='Start a new medocs document';
 $LDNoMedocsFound='No medocs document of the patient found!';
-$LDAt='at';		
-		
+$LDAt='at';
+
 $LDDept='Dept';
 $LDRoomNr='Room nr';
-$LDAdmitType='Admission type';		
+$LDAdmitType='Admission type';
 $LDCivilStat='Civil status';
 $LDInsuranceNr='Insurance nr';
 $LDNameAddr='Name & Address';
@@ -255,6 +255,7 @@ $LDSearchFoundAdmit='I found <font color=red><b>~nr~</b></font> relevant admissi
 $LDPatientNr='Patient Nr.';
 $LDNoRecordYet='~tag~ has no ~obj~ yet.';
 $LDNoRecordFor='No ~obj~ record for ~tag~ yet.';
+$LDRegistration='Registration';
 $LDRegistrationNr='Registration Nr.';
 $LDDate='Date';
 $LDType='Type';
@@ -418,6 +419,8 @@ $LDNoAddress='No City defined yet. Please go to the main menu and<br>click Speci
 
 # 2010-09-16
 $LDAdmitShowTypeInput ='Triage Code';
+
+$LDTestThisPatient='Test this patient';
 
 # 2010-09-18 GJ/APM
 $sAdmitTriageWhite = 'White';

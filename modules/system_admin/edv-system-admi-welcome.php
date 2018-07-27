@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -27,9 +27,11 @@ $_SESSION['sess_file_return']=basename(__FILE__);
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in toolbar
  $smarty->assign('sToolbarTitle',"$LDEDP $LDSystemAdmin");
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'padlock.gif','0').'>');
 
  # href for help button
  $smarty->assign('pbHelp',"javascript:gethelp('system_admin.php')");
@@ -62,7 +64,7 @@ $sTemp = ob_get_contents();
 # Assign the data  to the main frame template
 
  $smarty->assign('sMainFrameBlockData',$sTemp);
-
+ $smarty->assign('sMainBlockIncludeFile',"");
  /**
  * show Template
  */

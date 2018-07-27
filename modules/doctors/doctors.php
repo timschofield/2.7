@@ -1,12 +1,12 @@
 <?php
-//error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -19,9 +19,9 @@ if(!isset($_SESSION['sess_path_referer'])) $_SESSION['sess_path_referer'] = "";
 $breakfile=$root_path.'main/startframe.php'.URL_APPEND;
 
 $_SESSION['sess_path_referer']=$top_dir.basename(__FILE__);
-# Erase the cookie 
+# Erase the cookie
 if(isset($_COOKIE['ck_doctors_dienstplan_user'.$sid])) setcookie('ck_doctors_dienstplan_user'.$sid,'',0,'/');
-# erase the user_origin 
+# erase the user_origin
 if(isset($_SESSION['sess_user_origin'])) $_SESSION['sess_user_origin']='';
 
 # Start Smarty templating here
@@ -34,6 +34,7 @@ if(isset($_SESSION['sess_user_origin'])) $_SESSION['sess_user_origin']='';
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
  # Create a helper smarty object without reinitializing the GUI
  $smarty2 = new smarty_care('common', FALSE);
@@ -46,6 +47,8 @@ if(isset($_SESSION['sess_user_origin'])) $_SESSION['sess_user_origin']='';
  $smarty->assign('pbHelp',"javascript:gethelp('submenu1.php','$LDDoctors')");
 
  $smarty->assign('breakfile',$breakfile);
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'employee.gif','0').'>');
+ $smarty->assign('sWindowTitle',$LDDoctors);
 
  # Window bar title
  $smarty->assign('title',$LDDoctors);
@@ -82,8 +85,12 @@ while(list($x,$v)=each($aSubMenuItem)){
 	$sTemp='';
 	ob_start();
 		if (isset($cfg['icons'])) {
-			if($cfg['icons'] != 'no_icon') $smarty2->assign('sIconImg','<img '.$aSubMenuIcon[$iRunner].'>');
-		}
+			if($cfg['icons'] != 'no_icon') {
+				$smarty2->assign('sIconImg','<img '.$aSubMenuIcon[$iRunner].'>');
+			}
+		} else {
+				$smarty2->assign('sIconImg','<img '.createComIcon($root_path,'employee.gif','0').'>');
+			}
 		$smarty2->assign('sSubMenuItem',$v);
 		$smarty2->assign('sSubMenuText',$aSubMenuText[$iRunner]);
 		$smarty2->display('common/submenu_row.tpl');

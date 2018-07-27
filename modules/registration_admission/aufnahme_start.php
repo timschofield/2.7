@@ -1,7 +1,7 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
  * CARE2X Integrated Hospital Information System beta 2.0.1 - 2004-07-04
  * GNU General Public License
@@ -27,6 +27,11 @@ require_once($root_path.'include/care_api_classes/class_encounter.php');
 require_once($root_path.'include/care_api_classes/class_globalconfig.php');
 require_once($root_path.'include/care_api_classes/class_ecombill.php');
 require_once($root_path.'include/care_api_classes/class_personell.php');
+
+include_once($root_path.'include/care_api_classes/class_globalconfig.php');
+$GLOBAL_CONFIG=array();
+$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
+$glob_obj->getConfig('kwamoja%');
 
 //gjergji
 $current_dept_nr = $_SESSION['department_nr'];
@@ -62,7 +67,7 @@ $dbtable='care_encounter'; // The table of admission data
 /* Create new person's insurance object */
 $pinsure_obj=new PersonInsurance($pid);
 /* Get the insurance classes */
-$insurance_classes=&$pinsure_obj->getInsuranceClassInfoObject('class_nr,name,LD_var AS "LD_var"');
+$insurance_classes=$pinsure_obj->getInsuranceClassInfoObject('class_nr,name,LD_var AS "LD_var"');
 
 /* Create new person object */
 $person_obj=new Person($pid);
@@ -82,7 +87,7 @@ if($pid!='' || $encounter_nr!=''){
 	/* Get the patient global configs */
 	$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
 	$glob_obj->getConfig('patient_%');
-	$glob_obj->getConfig('person_foto_path');
+	$glob_obj->getConfig('person_photo_path');
 	$glob_obj->getConfig('encounter_%');
 	$glob_obj->getConfig('show_billable_items');
 	$glob_obj->getConfig('show_doctors_list');
@@ -101,7 +106,7 @@ if($pid!='' || $encounter_nr!=''){
 	}
 
 	/* Check whether config path exists, else use default path */
-	$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_foto_path'])) ? $GLOBAL_CONFIG['person_foto_path'] : $default_photo_path;
+	$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_photo_path'])) ? $GLOBAL_CONFIG['person_photo_path'] : $default_photo_path;
 
 	if ($pid)
 	{
@@ -110,9 +115,9 @@ if($pid!='' || $encounter_nr!=''){
 			header('Location:aufnahme_daten_zeigen.php'.URL_REDIRECT_APPEND.'&encounter_nr='.$encounter_nr.'&origin=admit&sem=isadmitted&target=entry');
 			exit;
 		}
-		 
+
 		/* Get the related insurance data */
-		$p_insurance=&$pinsure_obj->getPersonInsuranceObject($pid);
+		$p_insurance=$pinsure_obj->getPersonInsuranceObject($pid);
 		if($p_insurance==false) {
 			$insurance_show=true;
 		} else {
@@ -126,7 +131,7 @@ if($pid!='' || $encounter_nr!=''){
 			} else { $insurance_show=false;}
 		}
 
-			
+
 		if (($mode=='save') || ($forcesave!='')) {
 			if(!$forcesave) {
 				//clean and check input data variables
@@ -134,16 +139,16 @@ if($pid!='' || $encounter_nr!=''){
 				*  $error = 1 will cause to show the "save anyway" override button to save the incomplete data
 				*  $error = 2 will cause to force the user to enter a data in an input element (no override allowed)
 				*/
-				 
+
 				//gjergji
 				//added the possibility to upload foto here
 				// Create image object
 				include_once($root_path.'include/care_api_classes/class_image.php');
-				$img_obj=& new Image;
+				$img_obj= Image;
 				$picext='';
 				$valid_image=false;
 				$photo_filename='';
-				if($img_obj->isValidUploadedImage($_FILES['photo_filename'])){
+				if($_FILES['photo_filename'][size]>0 and $img_obj->isValidUploadedImage($_FILES['photo_filename'])){
 					$valid_image=TRUE;
 					# Get the file extension
 					$picext=$img_obj->UploadedImageMimeType();
@@ -156,32 +161,31 @@ if($pid!='' || $encounter_nr!=''){
 					$img_obj->saveUploadedImage($_FILES['photo_filename'],$root_path.$photo_path.'/',$photo_filename);
 					$person_obj->setPhotoFilename($pid,$photo_filename);
 				}
-					
-				//end : gjergji
 
+				//end : gjergji
 				$encoder=trim($encoder);
-				if($encoder=='') $encoder=$_SESSION['sess_user_name'];
-					
+				/*if($encoder=='') $encoder=$_SESSION['sess_user_name'];
+
 				$referrer_diagnosis=trim($referrer_diagnosis);
 				if ($referrer_diagnosis=='') { $errordiagnose=1; $error=1; $errornum++; };
-					
+
 				$referrer_dr=trim($referrer_dr);
 				if ($referrer_dr=='') { $errorreferrer=1; $error=1; $errornum++;};
-					
+
 				$referrer_recom_therapy=trim($referrer_recom_therapy);
 				if ($referrer_recom_therapy=='') { $errortherapie=1; $error=1; $errornum++;};
-					
+
 				$referrer_notes=trim($referrer_notes);
 				if ($referrer_notes=='') { $errorbesonder=1; $error=1; $errornum++;};
-					
+
 				$encounter_class_nr=trim($encounter_class_nr);
-				if ($encounter_class_nr=='') { $errorstatus=1; $error=1; $errornum++;};
+				if ($encounter_class_nr=='') { $errorstatus=1; $error=1; $errornum++;};*/
 
 				if($insurance_show) {
 					if(trim($insurance_nr) &&  trim($insurance_firm_name)=='') { $error_ins_co=1; $error=1; $errornum++;}
 				}
 			}
-				
+
 
 
 			if(!$error) {
@@ -210,7 +214,7 @@ if($pid!='' || $encounter_nr!=''){
 					//echo formatDate2STD($geburtsdatum,$date_format);
 					$itemno=$itemname;
 					$_POST['modify_id']=$encoder;
-					if($dbtype=='mysql' ){
+					if($dbtype=='mysqli' ){
 						$_POST['history']= "CONCAT(history,\"\n Update: ".date('Y-m-d H:i:s')." = $encoder\")";
 					}else{
 						$_POST['history']= "(history || '\n Update: ".date('Y-m-d H:i:s')." = $encoder')";
@@ -219,7 +223,6 @@ if($pid!='' || $encounter_nr!=''){
 					if(isset($_POST['pid'])) unset($_POST['pid']);
 
 					$encounter_obj->setDataArray($_POST);
-						
 					if($encounter_obj->updateEncounterFromInternalArray($encounter_nr)) {
 						/* Save the service classes */
 						if(!$GLOBAL_CONFIG['patient_service_care_hide']){
@@ -236,7 +239,7 @@ if($pid!='' || $encounter_nr!=''){
 					}
 
 				} else {
-						
+
 					$newdata=1;
 					/* Determine the format of the encounter number */
 					if($GLOBAL_CONFIG['encounter_nr_fullyear_prepend']) $ref_nr=(int)date('Y').$GLOBAL_CONFIG['encounter_nr_init'];
@@ -247,20 +250,24 @@ if($pid!='' || $encounter_nr!=''){
 						break;
 						case '2': $_POST['encounter_nr']=$encounter_obj->getNewEncounterNr($ref_nr+$GLOBAL_CONFIG['patient_outpatient_nr_adder'],2);
 					}
-						
+
 					$_POST['encounter_date']=date('Y-m-d H:i:s');
 					$_POST['modify_id']=$encoder;
 					//$_POST['modify_time']='NULL';
 					$_POST['create_id']=$encoder;
 					$_POST['create_time']=date('YmdHis');
 					$_POST['history']='Create: '.date('Y-m-d H:i:s').' = '.$encoder;
-					//if(isset($_POST['encounter_nr'])) unset($_POST['encounter_nr']);
+					if($_POST['encounter_nr']==1) {
+						$_POST['status']='in_ward';
+					} else {
+						$_POST['status']='in_dept';
+					}
+
 
 					$encounter_obj->setDataArray($_POST);
-
 					if($encounter_obj->insertDataFromInternalArray()) {
 						/* Get last insert id */
-						if($dbtype=='mysql') {
+						if($dbtype=='mysqli') {
 							//$encounter_nr = $db->Insert_ID();
 							$encounter_nr = $encounter_obj->buffer_array['encounter_nr'];
 						}else{
@@ -281,7 +288,7 @@ if($pid!='' || $encounter_nr!=''){
 					}else{
 						echo $LDDbNoSave.'<p>'.$encounter_obj->getLastQuery();
 					}
-						
+
 				}// end of if(update) else()
 			}	// end of if($error)
 		} // end of if($mode)
@@ -298,7 +305,7 @@ if($pid!='' || $encounter_nr!=''){
 			$insurance_firm_name=$pinsure_obj->getFirmName($insurance_firm_id);
 
 			/* GEt the patient's services classes */
-				
+
 			if(!empty($GLOBAL_CONFIG['patient_financial_class_single_result'])) $encounter_obj->setSingleResult(true);
 
 			if(!$GLOBAL_CONFIG['patient_service_care_hide']){
@@ -333,18 +340,18 @@ if($pid!='' || $encounter_nr!=''){
 		# Load all  wards info
 		$ward_obj=new Ward;
 		$items='nr,name,dept_nr';
-		$ward_info=&$ward_obj->getAllWardsItemsObject($items);
+		$ward_info=$ward_obj->getAllWardsItemsObject($items);
 	}
 	if(!$encounter_nr||$encounter_class_nr==2){
 		# Load all medical departments
 		include_once($root_path.'include/care_api_classes/class_department.php');
 		$dept_obj=new Department;
-		$all_meds=&$dept_obj->getAllMedicalObject();
+		$all_meds=$dept_obj->getAllMedicalObject();
 	}
-	 
+
 	$person_obj->setPID($pid);
-	if($data=&$person_obj->BasicDataArray($pid)){
-		//while(list($x,$v)=each($data))	$$x=$v;
+	if($data=$person_obj->BasicDataArray($pid)){
+		//while(list($x,$v)=each($data))	${$x}=$v;
 		extract($data);
 	}
 
@@ -361,7 +368,11 @@ include_once($root_path.'include/core/inc_patient_encounter_type.php');
 if($encounter_nr) $headframe_title = "$headframe_title $headframe_append ";
 
 # Prepare onLoad JS code
-if(!$encounter_nr && !$pid) $sOnLoadJs ='onLoad="if(document.searchform.searchkey.focus) document.searchform.searchkey.focus();"';
+if(!$encounter_nr && !$pid) {
+	$sOnLoadJs ='onLoad="if(document.searchform.searchkey.focus) document.searchform.searchkey.focus();"';
+} else {
+	$sOnLoadJs ='';
+}
 
 
 # Start Smarty templating here
@@ -373,10 +384,12 @@ if(!$encounter_nr && !$pid) $sOnLoadJs ='onLoad="if(document.searchform.searchke
 
 require_once($root_path.'gui/smarty_template/smarty_care.class.php');
 $smarty = new smarty_care('common');
+require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in the toolbar
+$smarty->assign('sWindowTitle',$headframe_title);
 $smarty->assign('sToolbarTitle',$headframe_title);
-
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'patdata.gif','0').'>');
 # href for help button
 $smarty->assign('pbHelp',"javascript:gethelp('admission_how2new.php')");
 
@@ -411,7 +424,9 @@ function chkform(d) {
 	if(d.encounter_class_nr[0]&&d.encounter_class_nr[1]&&!d.encounter_class_nr[0].checked&&!d.encounter_class_nr[1].checked){
 		alert("<?php echo $LDPlsSelectAdmissionType; ?>");
 		return false;
-	}else if(d.encounter_class_nr[0]&&d.encounter_class_nr[0].checked&&!d.current_ward_nr.value){
+	}
+	/*
+	else if(d.encounter_class_nr[0]&&d.encounter_class_nr[0].checked&&!d.current_ward_nr.value){
 		alert("<?php echo $LDPlsSelectWard; ?>");
 		d.current_ward_nr.focus();
 		return false;
@@ -427,7 +442,8 @@ function chkform(d) {
 		alert("<?php echo $LDPlsSelectDept; ?>");
 		d.current_dept_nr.focus();
 		return false;
-	}else if(d.referrer_diagnosis.value==""){
+	}
+	else if(d.referrer_diagnosis.value==""){
 		alert("<?php echo $LDPlsEnterRefererDiagnosis; ?>");
 		d.referrer_diagnosis.focus();
 		return false;
@@ -443,7 +459,8 @@ function chkform(d) {
 		alert("<?php echo $LDPlsEnterRefererNotes; ?>");
 		d.referrer_notes.focus();
 		return false;
-	}else if(d.encoder.value==""){
+	}*/
+	else if(d.encoder.value==""){
 		alert("<?php echo $LDPlsEnterFullName; ?>");
 		d.encoder.focus();
 		return false;
@@ -514,8 +531,9 @@ if(!isset($pid) || !$pid){
 }else{
 
 	$smarty->assign('bSetAsForm',TRUE);
+	$smarty->assign('LDPlsSelectPatientFirst',False);
 
-	if($error){
+	if($error > 0){
 		$smarty->assign('error',TRUE);
 		$smarty->assign('sMascotImg','<img '.createMascot($root_path,'mascot1_r.gif','0','bottom').' align="absmiddle">');
 
@@ -524,22 +542,34 @@ if(!isset($pid) || !$pid){
 	}
 
 	$smarty->assign('LDCaseNr',$LDCaseNr);
+	$smarty->assign('thisfile',$thisfile);
 	if(isset($encounter_nr) && $encounter_nr) 	$smarty->assign('encounter_nr',$encounter_nr);
 	else  $smarty->assign('encounter_nr','<font color="red">'.$LDNotYetAdmitted.'</font>');
 
 	$smarty->assign('img_source',"<img $img_source>");
 	//gjergji
 	if ($photo_filename=='' || $photo_filename=='nopic' || !file_exists($root_path.$default_photo_path.'/'.$photo_filename)){
-		$smarty->assign('sFileBrowserInput','<input name="photo_filename" type="file" size="15"   onChange="showpic(this)" value="'.$pfile.'">');
+		$smarty->assign('sFileBrowserInput','<input name="photo_filename" type="file" size="15"   onChange="showpic(this)" value="'.$photo_filename.'">');
 	}
 	//end : gjergji
 	$smarty->assign('LDAdmitDate',$LDAdmitDate);
-
-	if(isset($encounter_nr) && $encounter_nr) 	$smarty->assign('sAdmitDate',@formatDate2Local(date('Y-m-d'),$date_format));
-
+	$smarty->assign('sEncBarcode',"<img src='".$root_path."classes/barcode/image.php?code=".$encounter_nr."&style=68&type=I25&width=180&height=40&xres=2&font=5' border=0>");
+	$smarty->assign('sHiddenBarcode',False);
+	if(isset($encounter_nr)) {
+		$smarty->assign('sAdmitDate',@formatDate2Local(date('Y-m-d'),$date_format));
+	}
 	$smarty->assign('LDAdmitTime',$LDAdmitTime);
+	if(isset($encounter_nr))  $smarty->assign('sAdmitTime',@convertTimeToLocal(date('H:i:s')));
 
-	if(isset($encounter_nr) && $encounter_nr)  $smarty->assign('sAdmitTime',@convertTimeToLocal(date('H:i:s')));
+# If person is dead show a black cross and assign death date
+
+	if(isset($death_date) && $death_date != DBF_NODATE){
+		$smarty->assign('sCrossImg','<img '.createComIcon($root_path,'blackcross_sm.gif','0','',TRUE).'>');
+		$smarty->assign('sDeathDate',@formatDate2Local($death_date,$date_format));
+	} else {
+		$smarty->assign('sCrossImg','');
+		$smarty->assign('sDeathDate','');
+	}
 
 	$smarty->assign('LDTitle',$LDTitle);
 	$smarty->assign('title',$title);
@@ -547,7 +577,7 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('name_last',$name_last);
 	$smarty->assign('LDFirstName',$LDFirstName);
 	$smarty->assign('name_first',$name_first);
-
+	$smarty->assign('LDAdmitShowTypeInput',$LDAdmitShowTypeInput);
 	# Set a row span counter, initialize with 6
 	$iRowSpan = 6;
 
@@ -555,18 +585,27 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('LDName2',$LDName2);
 		$smarty->assign('name_2',$name_2);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDName2','');
+		$smarty->assign('name_2','');
 	}
 
 	if($GLOBAL_CONFIG['patient_name_3_show']&&$name_3){
 		$smarty->assign('LDName3',$LDName3);
 		$smarty->assign('name_3',$name_3);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDName3','');
+		$smarty->assign('name_3','');
 	}
 
 	if($GLOBAL_CONFIG['patient_name_middle_show']&&$name_middle){
 		$smarty->assign('LDNameMid',$LDNameMid);
 		$smarty->assign('name_middle',$name_middle);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDNameMid','');
+		$smarty->assign('name_middle','');
 	}
 	$smarty->assign('sRowSpan',"rowspan=\"$iRowSpan\"");
 
@@ -580,7 +619,7 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('LDBloodGroup',$LDBloodGroup);
 	if($blood_group){
 		$buf='LD'.$blood_group;
-		$smarty->assign('blood_group',$$buf);
+		$smarty->assign('blood_group',${$buf});
 	}
 
 	$smarty->assign('LDAddress',$LDAddress);
@@ -588,10 +627,10 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('addr_str',$addr_str);
 	$smarty->assign('addr_str_nr',$addr_str_nr);
 	$smarty->assign('addr_zip',$addr_zip);
-	$smarty->assign('addr_citytown',$addr_citytown_name);
+	$smarty->assign('addr_citytown_name',$addr_citytown_name);
 	//start gjergji
 	//simple admission type, how the patietnt came in
-	if(!$admit_type) {
+	if(!isset($admit_type)) {
 		$enc_type = $encounter_obj->getEncounterType();
 		$sTemp = '<select name="admit_type">';
 		while( $typeResults = $enc_type->FetchRow()) {
@@ -607,19 +646,37 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('sAdmitShowTypeInput',$sTemp);
 	//end : simple admission type, how the patietnt came in
 	//start simple triage
-	$smarty->assign('LDAdmitShowTypeInput',$LDAdmitShowTypeInput);
-	if(!$triage) {
-		$smarty->assign('sAdmitTriageWhite',$sAdmitTriageWhite);
-		$smarty->assign('sAdmitTriageGreen',$sAdmitTriageGreen);
-		$smarty->assign('sAdmitTriageYellow',$sAdmitTriageYellow);
-		$smarty->assign('sAdmitTriageRed',$sAdmitTriageRed);
-	} else {
-		if($triage == 'white') { $smarty->assign('sAdmitTriageWhite',$sAdmitTriageWhite); }
-		elseif($triage == 'green') { $smarty->assign('sAdmitTriageGreen',$sAdmitTriageGreen); }
-		elseif ($triage == 'yellow') { $smarty->assign('sAdmitTriageYellow',$sAdmitTriageYellow); }
-		elseif ($triage == 'red') { $smarty->assign('sAdmitTriageRed',$sAdmitTriageRed); }
-		$smarty->assign('LDShowTriageData','-');
+	if (isset($triage)) {
+		if($triage == 'white') {
+			$smarty->assign('sAdmitTriageWhite',$sAdmitTriageWhite);
+			$smarty->assign('sAdmitTriageGreen','');
+			$smarty->assign('sAdmitTriageYellow','');
+			$smarty->assign('sAdmitTriageRed','');
+		}elseif($triage == 'green') {
+			$smarty->assign('sAdmitTriageWhite','');
+			$smarty->assign('sAdmitTriageGreen',$sAdmitTriageGreen);
+			$smarty->assign('sAdmitTriageYellow','');
+			$smarty->assign('sAdmitTriageRed','');
+		}elseif ($triage == 'yellow') {
+			$smarty->assign('sAdmitTriageWhite','');
+			$smarty->assign('sAdmitTriageGreen','');
+			$smarty->assign('sAdmitTriageYellow',$sAdmitTriageYellow);
+			$smarty->assign('sAdmitTriageRed','');
+		}elseif ($triage == 'red') {
+			$smarty->assign('sAdmitTriageWhite','');
+			$smarty->assign('sAdmitTriageGreen','');
+			$smarty->assign('sAdmitTriageYellow','');
+			$smarty->assign('sAdmitTriageRed',$sAdmitTriageRed);
+		}
+	}else {
+		$smarty->assign('sAdmitTriageWhite','');
+		$smarty->assign('sAdmitTriageGreen','');
+		$smarty->assign('sAdmitTriageYellow','');
+		$smarty->assign('sAdmitTriageRed','');
 	}
+	$smarty->assign('sAdmitTriage','');
+	$smarty->assign('sDeptInput','');
+	$smarty->assign('LDShowTriageData','');
 	//end simple triage
 	//end : gjergji
 	$smarty->assign('LDAdmitClass',$LDAdmitClass);
@@ -630,7 +687,7 @@ if(!isset($pid) || !$pid){
 			$LD=$result['LD_var'];
 			if($encounter_nr ){ # If admitted, freeze encounter class
 				if ($encounter_class_nr==$result['class_nr']){
-					if(isset($$LD)&&!empty($$LD)) $sTemp = $sTemp.$$LD;
+					if(isset(${$LD})&&!empty(${$LD})) $sTemp = $sTemp.${$LD};
 					else $sTemp = $sTemp.$result['name'];
 					$sTemp = $sTemp.'<input name="encounter_class_nr" type="hidden"  value="'.$encounter_class_nr.'">';
 					break;
@@ -640,7 +697,7 @@ if(!isset($pid) || !$pid){
 				if($encounter_class_nr==$result['class_nr']) $sTemp = $sTemp.'checked';
 				$sTemp = $sTemp.'>';
 
-				if(isset($$LD)&&!empty($$LD)) $sTemp = $sTemp.$$LD;
+				if(isset(${$LD})&&!empty(${$LD})) $sTemp = $sTemp.${$LD};
 				else $sTemp = $sTemp.$result['name'];
 			}
 		}
@@ -650,10 +707,11 @@ if(!isset($pid) || !$pid){
 	# If no encounter nr or inpatient, show ward/station info, 1 = inpatient
 	if( $encounter_class_nr == 1 ) {
 
-		if ($errorward||$encounter_class_nr==1) $smarty->assign('LDWard',"<font color=red>$LDPavijon</font>");
+		if ($encounter_class_nr==1) $smarty->assign('LDWard',"<font color=red>$LDWard</font>");
+		$smarty->assign('LDDepartment','');
 		$smarty->assign('LDWard',$LDWard);
 		$sTemp = '';
-		if($in_ward){
+		if(isset($in_ward)){
 			while($station=$ward_info->FetchRow()){
 				if(isset($current_ward_nr)&&($current_ward_nr==$station['nr'])){
 					$sTemp = $sTemp.$station['name'];
@@ -665,9 +723,9 @@ if(!isset($pid) || !$pid){
 			$sTemp = $sTemp.'<select name="current_ward_nr">';
 			if(!empty($ward_info) && $ward_info->RecordCount()){
 				while($station=$ward_info->FetchRow()){
-					if(in_array($station['dept_nr'],$current_dept_nr)) {
+					//if(in_array($station['dept_nr'],$current_dept_nr)) {
 						$sTemp = $sTemp.'<option value="'.$station['nr'].'"  selected >' . $station['name'].'</option>';
-					}
+					//}
 				}
 			}
 			$sTemp = $sTemp.'</select>
@@ -676,10 +734,11 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('sWardInput',$sTemp);
 	} else { // End of if no encounter nr
 		# If no encounter nr or outpatient, show clinic/department info, 2 = outpatient
-		if ( $errorward || $encounter_class_nr == 2) $smarty->assign('LDDepartment',"<font color=red>$LDDepartment</font>");
+		if ($encounter_class_nr == 2) $smarty->assign('LDDepartment',"<font color=red>$LDDepartment</font>");
 		else $smarty->assign('LDDepartment',"$LDDepartment");
+		$smarty->assign('LDWard','');
 		$sTemp = '';
-		if($in_dept){
+		if(isset($in_dept)){
 			while($deptrow=$all_meds->FetchRow()){
 				if(isset($current_dept_nr)&&($current_dept_nr==$deptrow['nr'])){
 					$sTemp = $sTemp.$deptrow['name_formal'];
@@ -689,15 +748,16 @@ if(!isset($pid) || !$pid){
 			}
 		}else{
 			$sTemp = $sTemp.'<select name="current_dept_nr">';
-				
+
 			if(is_object($all_meds)){
 				while($deptrow=$all_meds->FetchRow()){
-					if(in_array($deptrow['nr'],$current_dept_nr)) {
+
+					//if(in_array($deptrow['nr'],$current_dept_nr)) {
 						$sTemp = $sTemp.'<option value="'.$deptrow['nr'].'" selected >';
-						if($$deptrow['LD_var']!='') $sTemp = $sTemp.$$deptrow['LD_var'];
+						if($deptrow['LD_var']!='') $sTemp = $sTemp.${$deptrow['LD_var']};
 						else $sTemp = $sTemp.$deptrow['name_formal'];
 						$sTemp = $sTemp.'</option>';
-					}
+					//}
 				}
 			}
 			$sTemp = $sTemp.'</select><font size=1><img '.createComIcon($root_path,'redpfeil_l.gif','0','',TRUE).'> '.$LDForOutpatient.'</font>';
@@ -705,6 +765,10 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('sDeptInput',$sTemp);
 	} // End of if no encounter nr
 
+	if (!isset($referrer_diagnosis)) {$referrer_diagnosis='';}
+	if (!isset($referrer_dr)) {$referrer_dr='';}
+	if (!isset($referrer_recom_therapy)) {$referrer_recom_therapy='';}
+	if (!isset($referrer_notes)) {$referrer_notes='';}
 	$smarty->assign('LDDiagnosis',$LDDiagnosis);
 	$smarty->assign('referrer_diagnosis','<input name="referrer_diagnosis" type="text" size="60" value="'.$referrer_diagnosis.'">');
 	$smarty->assign('LDRecBy',$LDRecBy);
@@ -714,36 +778,49 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('LDSpecials',$LDSpecials);
 	$smarty->assign('referrer_notes','<input name="referrer_notes" type="text" size="60" value="'.$referrer_notes.'">');
 
-	if ($errorinsclass) $smarty->assign('LDBillType',"<font color=red>$LDBillType</font>");
-	else  $smarty->assign('LDBillType',$LDBillType);
+	if($GLOBAL_CONFIG['kwamoja_database']!='') {
+		$smarty->assign('LDBillingClass',False);
+		$smarty->assign('LDInsuranceCompany',True);
+		if (isset($errorinsclass)) $smarty->assign('LDBillType',"<font color=red>$LDBillType</font>");
+		else  $smarty->assign('LDBillType',$LDBillType);
 
-	$sTemp = '';
-	if(is_object($insurance_classes)){
-		while($result=$insurance_classes->FetchRow()) {
+		$sTemp = '';
+		if(is_object($insurance_classes)){
+			while($result=$insurance_classes->FetchRow()) {
 
-			$sTemp = $sTemp.'<input name="insurance_class_nr" type="radio"  value="'.$result['class_nr'].'" ';
-			if($insurance_class_nr==$result['class_nr']) $sTemp = $sTemp.'checked';
-			$sTemp = $sTemp.'>';
+				$sTemp = $sTemp.'<input name="insurance_class_nr" type="radio"  value="'.$result['class_nr'].'" ';
+				if(isset($insurance_class_nr) and $insurance_class_nr==$result['class_nr']) $sTemp = $sTemp.'checked';
+				$sTemp = $sTemp.'>';
 
-			$LD=$result['LD_var'];
-			if(isset($$LD)&&!empty($$LD)) $sTemp = $sTemp.$$LD;
-			else $sTemp = $sTemp.$result['name'];
+				$LD=$result['LD_var'];
+				if(isset(${$LD})&&!empty(${$LD})) $sTemp = $sTemp.${$LD};
+				else $sTemp = $sTemp.$result['name'];
+			}
 		}
+		$smarty->assign('sBillTypeInput',$sTemp);
+		$sTemp = '';
+		if (isset($error_ins_nr)) $smarty->assign('LDInsuranceNr',"<font color=red>$LDInsuranceNr</font>");
+		else  $smarty->assign('LDInsuranceNr',$LDInsuranceNr);
+		if(isset($insurance_nr) && $insurance_nr) $sTemp = $insurance_nr;
+		$smarty->assign('insurance_nr','<input name="insurance_nr" type="text" size="60" value="'.$sTemp.'">');
+
+		$sTemp = '';
+		if(isset($insurance_firm_name)) $sTemp = $insurance_firm_name;
+		if (isset($error_ins_co)) $smarty->assign('LDInsuranceCo',"<font color=red>$LDInsuranceCo</font>");
+		else $smarty->assign('LDInsuranceCo',$LDInsuranceCo);
+
+		$sBuffer ="<a href=\"javascript:popSearchWin('insurance','aufnahmeform.insurance_firm_id','aufnahmeform.insurance_firm_name')\"><img ".createComIcon($root_path,'l-arrowgrnlrg.gif','0','',TRUE)."></a>";
+		$smarty->assign('insurance_firm_name','<input name="insurance_firm_name" type="text" size="60" value="'.$sTemp.'">'.$sBuffer);
+	} else {
+		$smarty->assign('LDBillingClass',False);
+		$smarty->assign('LDInsuranceCompany',False);
+		$smarty->assign('LDBillType','');
+		$smarty->assign('sBillTypeInput','');
+		$smarty->assign('LDInsuranceNr','');
+		$smarty->assign('insurance_nr','');
+		$smarty->assign('LDInsuranceCo','');
+		$smarty->assign('insurance_firm_name','');
 	}
-	$smarty->assign('sBillTypeInput',$sTemp);
-	$sTemp = '';
-	if ($error_ins_nr) $smarty->assign('LDInsuranceNr',"<font color=red>$LDInsuranceNr</font>");
-	else  $smarty->assign('LDInsuranceNr',$LDInsuranceNr);
-	if(isset($insurance_nr) && $insurance_nr) $sTemp = $insurance_nr;
-	$smarty->assign('insurance_nr','<input name="insurance_nr" type="text" size="60" value="'.$sTemp.'">');
-
-	$sTemp = '';
-	if(isset($insurance_firm_name)) $sTemp = $insurance_firm_name;
-	if ($error_ins_co) $smarty->assign('LDInsuranceCo',"<font color=red>$LDInsuranceCo</font>");
-	else $smarty->assign('LDInsuranceCo',$LDInsuranceCo);
-
-	$sBuffer ="<a href=\"javascript:popSearchWin('insurance','aufnahmeform.insurance_firm_id','aufnahmeform.insurance_firm_name')\"><img ".createComIcon($root_path,'l-arrowgrnlrg.gif','0','',TRUE)."></a>";
-	$smarty->assign('insurance_firm_name','<input name="insurance_firm_name" type="text" size="60" value="'.$sTemp.'">'.$sBuffer);
 
 	if (!$GLOBAL_CONFIG['patient_service_care_hide']&& is_object($care_service)){
 		$smarty->assign('LDCareServiceClass',$LDCareServiceClass);
@@ -756,8 +833,8 @@ if(!isset($pid) || !$pid){
 						<option value="'.$buffer['class_nr'].'" ';
 			if($sc_care_class_nr==$buffer['class_nr']) $sTemp = $sTemp.'selected';
 			$sTemp = $sTemp.'>';
-			if(empty($$buffer['LD_var'])) $sTemp = $sTemp.$buffer['name'];
-			else $sTemp = $sTemp.$$buffer['LD_var'];
+			if(empty(${$buffer['LD_var']})) $sTemp = $sTemp.$buffer['name'];
+			else $sTemp = $sTemp.${$buffer['LD_var']};
 			$sTemp = $sTemp.'</option>';
 		}
 		$sTemp = $sTemp.'</select>';
@@ -775,6 +852,10 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('sCSToInput','<input type="text" name="sc_care_end"  value="'.$sTemp.'"  size=9 maxlength=10   onBlur="IsValidDate(this,\''.$date_format.'\')" onKeyUp="setDate(this,\''.$date_format.'\',\''.$lang.'\')">');
 		$smarty->assign('sCSHidden','<input type="hidden" name="sc_care_nr" value="'.$sc_care_nr.'">');
 
+	} else {
+		$smarty->assign('LDCareServiceClass','');
+		$smarty->assign('LDFrom','');
+		$smarty->assign('LDTo','');
 	}
 
 	if (!$GLOBAL_CONFIG['patient_service_room_hide']&& is_object($room_service)){
@@ -788,8 +869,8 @@ if(!isset($pid) || !$pid){
 						<option value="'.$buffer['class_nr'].'" ';
 			if($sc_room_class_nr==$buffer['class_nr']) $sTemp = $sTemp.'selected';
 			$sTemp = $sTemp.'>';
-			if(empty($$buffer['LD_var'])) $sTemp = $sTemp.$buffer['name'];
-			else $sTemp = $sTemp.$$buffer['LD_var'];
+			if(empty(${$buffer['LD_var']})) $sTemp = $sTemp.$buffer['name'];
+			else $sTemp = $sTemp.${$buffer['LD_var']};
 			$sTemp = $sTemp.'</option>';
 		}
 		$sTemp = $sTemp.'</select>';
@@ -807,6 +888,12 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('sRSToInput','<input type="text" name="sc_room_end"  value="'.$sTemp.'"  size=9 maxlength=10   onBlur="IsValidDate(this,\''.$date_format.'\')" onKeyUp="setDate(this,\''.$date_format.'\',\''.$lang.'\')">');
 		$smarty->assign('sRSHidden','<input type="hidden" name="sc_room_nr" value="'.$sc_room_nr.'">');
 
+	} else {
+		$smarty->assign('LDRoomServiceClass',$LDRoomServiceClass);
+		$smarty->assign('sCareRoomInput',$sTemp);
+		$smarty->assign('sRSFromInput','');
+		$smarty->assign('sRSToInput','');
+		$smarty->assign('sRSHidden','');
 	}
 
 	if (!$GLOBAL_CONFIG['patient_service_att_dr_hide']&& is_object($att_dr_service)){
@@ -820,8 +907,8 @@ if(!isset($pid) || !$pid){
 						<option value="'.$buffer['class_nr'].'" ';
 			if($sc_att_dr_class_nr==$buffer['class_nr']) $sTemp = $sTemp.'selected';
 			$sTemp = $sTemp.'>';
-			if(empty($$buffer['LD_var'])) $sTemp = $sTemp.$buffer['name'];
-			else $sTemp = $sTemp.$$buffer['LD_var'];
+			if(empty(${$buffer['LD_var']})) $sTemp = $sTemp.$buffer['name'];
+			else $sTemp = $sTemp.${$buffer['LD_var']};
 			$sTemp = $sTemp.'</option>';
 		}
 		$sTemp = $sTemp.'</select>';
@@ -837,9 +924,11 @@ if(!isset($pid) || !$pid){
 		$smarty->assign('sDSToInput','<input type="text" name="sc_att_dr_end"  value="'.$sTemp.'"  size=9 maxlength=10   onBlur="IsValidDate(this,\''.$date_format.'\')" onKeyUp="setDate(this,\''.$date_format.'\',\''.$lang.'\')">');
 		$smarty->assign('sDSHidden','<input type="hidden" name="sc_att_dr_nr" value="'.$sc_att_dr_nr.'">');
 
+	} else {
+		$smarty->assign('LDAttDrServiceClass','');
 	}
-		
-	if ($GLOBAL_CONFIG['show_billable_items'] && $encounter_class_nr == 2){
+
+	if (isset($GLOBAL_CONFIG['show_billable_items']) && $encounter_class_nr == 2){
 		$smarty->assign('LDAdmitBillItem',$LDAdmitBillItem);
 		$eComBillItems = $eComBill_obj->listServiceItems();
 		$eComBillsForPatient = $eComBill_obj->listBillsByEncounter($encounter_nr);
@@ -863,9 +952,11 @@ if(!isset($pid) || !$pid){
 
 		$smarty->assign('sBIFromInput',$sTemp);
 		$smarty->assign('sDSHidden','<input type="hidden" name="billable_item_hidden" value="'.$sc_billable_item.'">');
+	} else {
+		$smarty->assign('LDAdmitBillItem','');
 	}
 
-	if ($GLOBAL_CONFIG['show_doctors_list'] && $encounter_class_nr == 2){
+	if (isset($GLOBAL_CONFIG['show_doctors_list']) && $encounter_class_nr == 2){
 		$smarty->assign('LDAdmitDoctorRefered',$LDAdmitDoctorRefered);
 		$personellItems = $personell_obj->_getAllPersonellByRole(17);
 
@@ -890,12 +981,17 @@ if(!isset($pid) || !$pid){
 
 		$smarty->assign('sRefDrFromInput',$sTemp);
 		$smarty->assign('sRefDrHidden','<input type="hidden" name="referred_dr_hidden" value="'.$referred_dr.'">');
+	} else {
+		$smarty->assign('LDAdmitDoctorRefered','');
 	}
-		
+
 	$smarty->assign('LDAdmitBy',$LDAdmitBy);
 	if (empty($encoder)) $encoder = $_COOKIE[$local_user.$sid];
 	$smarty->assign('encoder','<input  name="encoder" type="text" value="'.$encoder.'" size="28" readonly>');
 
+	if (!isset($appt_nr)) {$appt_nr='';}
+	if (!isset($insurance_firm_id)) {$insurance_firm_id='';}
+	if (!isset($insurance_show)) {$insurance_show='';}
 	$sTemp = '<input type="hidden" name="pid" value="'.$pid.'">
 				<input type="hidden" name="encounter_nr" value="'.$encounter_nr.'">
 				<input type="hidden" name="appt_nr" value="'.$appt_nr.'">
@@ -904,7 +1000,7 @@ if(!isset($pid) || !$pid){
 				<input type="hidden" name="mode" value="save">
 				<input type="hidden" name="insurance_firm_id" value="'.$insurance_firm_id.'">
 				<input type="hidden" name="insurance_show" value="'.$insurance_show.'">
-				<INPUT TYPE="hidden" name="MAX_FILE_SIZE" value="1000000">'; // <-- this line gjergji
+				<input type="hidden" name="MAX_FILE_SIZE" value="1000000">'; // <-- this line gjergji
 
 	if($update) $sTemp = $sTemp.'<input type="hidden" name=update value=1>';
 
@@ -919,10 +1015,16 @@ if(!isset($pid) || !$pid){
 	$smarty->assign('pbRefresh','<a href="javascript:document.aufnahmeform.reset()"><img '.createLDImgSrc($root_path,'reset.gif','0').' alt="'.$LDResetData.'"  align="absmiddle"></a>');
 	-->
 	*/
-		
-	if($error==1)
-	$smarty->assign('sErrorHidInputs','<input type="hidden" name="forcesave" value="1">
+	$smarty->assign('pbRefresh','');
+	if($error==1) {
+		$smarty->assign('sErrorHidInputs','<input type="hidden" name="forcesave" value="1">
 				<input  type="submit" value="'.$LDForceSave.'">');
+	} else {
+		$smarty->assign('sErrorHidInputs','');
+	}
+	$smarty->assign('sUpdateHidInputs','');
+	$smarty->assign('is_discharged',False);
+	$smarty->assign('error',$error);
 
 	if (!($newdata)) {
 
@@ -935,6 +1037,8 @@ if(!isset($pid) || !$pid){
 		</form>';
 
 		$smarty->assign('sNewDataForm',$sTemp);
+	} else {
+		$smarty->assign('sNewDataForm','');
 	}
 
 }  // end of if !isset($pid...

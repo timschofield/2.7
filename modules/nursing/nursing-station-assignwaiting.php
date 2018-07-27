@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -39,9 +39,9 @@ $breakfile='javascript:window.close()'; # Set default breakfile
 require_once($root_path.'include/care_api_classes/class_ward.php');
 $ward_obj= new Ward;
 
-# Load date formatter 
+# Load date formatter
 require_once($root_path.'include/core/inc_date_format_functions.php');
-  
+
 if(($mode=='')||($mode=='fresh')){
 	if($ward_info=&$ward_obj->getWardInfo($ward_nr)){
 		$room_obj=&$ward_obj->getRoomInfo($ward_nr,$ward_info['room_nr_start'],$ward_info['room_nr_end']);
@@ -64,16 +64,16 @@ if(($mode=='')||($mode=='fresh')){
 		}else{
 				$patients_ok=false;
 		}
-				
+
 		$ward_ok=true;
-		
+
 		# Load global person photo source path
 		include_once($root_path.'include/care_api_classes/class_globalconfig.php');
 		$GLOBAL_CONFIG=array();
 		$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
-		$glob_obj->getConfig('person_foto_path');
+		$glob_obj->getConfig('person_photo_path');
 		$default_photo_path='uploads/photos/registration';
-		$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_foto_path'])) ? $GLOBAL_CONFIG['person_foto_path'] : $default_photo_path;
+		$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_photo_path'])) ? $GLOBAL_CONFIG['person_photo_path'] : $default_photo_path;
 
 		#Create encounter object and load encounter info
 		$enc_obj=new Encounter($pn);
@@ -81,7 +81,7 @@ if(($mode=='')||($mode=='fresh')){
 		if($enc_obj->is_loaded) {
 			$encounter=&$enc_obj->encounter;
 		}
-		
+
 		# Set the foto filename
 		$photo_filename=$encounter['photo_filename'];
 		/* Prepare the photo filename */
@@ -89,7 +89,7 @@ if(($mode=='')||($mode=='fresh')){
 
 		# Get billing type
 		$billing_type=&$enc_obj->getInsuranceClassInfo($encounter['insurance_class_nr']);
-			
+
 	}else{
 			$ward_ok=false;
 	}
@@ -218,7 +218,7 @@ $iRowSpan = 5;
 if(trim($encounter['blood_group'])){
 	$smarty->assign('LDBloodGroup',$LDBloodGroup);
 	$buf=trim('LD'.$encounter['blood_group']);
-	$smarty->assign('blood_group',$$buf);
+	$smarty->assign('blood_group',${$buf});
 	$iRowSpan++;
 }
 
@@ -232,7 +232,7 @@ if($encounter['sex']=='m') $smarty->assign('sSexType',$LDMale);
 	elseif($encounter['sex']=='f') $smarty->assign('sSexType',$LDFemale);
 
 $smarty->assign('LDBillType',$LDBillType);
-if (isset($$billing_type['LD_var'])&&!empty($$billing_type['LD_var'])) $smarty->assign('billing_type',$$billing_type['LD_var']);
+if (isset(${$billing_type['LD_var']})&&!empty(${$billing_type['LD_var']})) $smarty->assign('billing_type',${$billing_type['LD_var']});
     else $smarty->assign('billing_type',$billing_type['name']);
 
 $smarty->assign('LDDiagnosis',$LDDiagnosis);
@@ -468,7 +468,7 @@ if($ward_ok){
 			$sBuffer = '';
 			if($bed['insurance_class_nr']!=2) $sBuffer = $sBuffer.'<font color="#ff0000">';
 
-			if(isset($$bed['insurance_LDvar'])&&!empty($$bed['insurance_LDvar']))  $sBuffer = $sBuffer.$$bed['insurance_LDvar'];
+			if(isset(${$bed['insurance_LDvar']})&&!empty(${$bed['insurance_LDvar']}))  $sBuffer = $sBuffer.${$bed['insurance_LDvar']};
 				else  $sBuffer = $sBuffer.$bed['insurance_name'];
 
 			$smarty->assign('sInsuranceType',$sBuffer);
@@ -495,7 +495,7 @@ if($ward_ok){
 
 		$smarty->assign('sOccListRows',$sListRows);
 	} // end of ward loop
-	
+
 	# Display the empty bed transfer list
 	$smarty->display('nursing/ward_transferbed_list.tpl');
 

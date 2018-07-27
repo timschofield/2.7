@@ -1,12 +1,12 @@
 <?php
-//error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -35,10 +35,10 @@ define('NO_2LEVEL_CHK',1);
 require_once($root_path.'include/core/inc_front_chain_lang.php');
 /* Load the ward object */
 require_once($root_path.'include/care_api_classes/class_ward.php');
-$ward=new Ward;
+$ward = new Ward();
 /* Load the dept object */
 require_once($root_path.'include/care_api_classes/class_department.php');
-$dept=new Department;
+$dept = new Department();
 
 $breakfile='nursing-station-manage.php'.URL_APPEND;
 
@@ -49,30 +49,33 @@ $t_date=$pday.'.'.$pmonth.'.'.$pyear;
 
 if($mode){
 	$dbtable='care_ward';
-			
-	if(!isset($db)||!$db) include($root_path.'include/core/inc_db_makelink.php');
+
+	if(!isset($db)||!$db) {
+        include($root_path.'include/core/inc_db_makelink.php');
+    }
 	if($dblink_ok){
-		switch($mode)
-		{	
-			case 'create': 
+		switch($mode){
+			case 'create':
 			//$db->debug=1;
 				/* check if ward already exists */
-								if(!$ward->IDExists($ward_id)){				
-									if($ergebnis=$ward->saveWard($_POST)){
-										if($dbtype=='mysql'){
-											$ward_nr=$db->Insert_ID();
-										}else{
-											$ward_nr=$ward->postgre_Insert_ID($dbtable,'nr',$db->Insert_ID());
-										}
-										header("location:nursing-station-new-createbeds.php?sid=$sid&lang=$lang&ward_nr=$ward_nr");
-										exit;
-									}else{echo "$sql<br>$LDDbNoSave";}
-								}else{ $ward_exists=true;}
-								break;
+                if(!$ward->IDExists($ward_id)){
+                    if($ergebnis=$ward->saveWard($_POST)){
+                        if($dbtype=='mysqli'){
+                            // $ward_nr=$db->Insert_ID();
+                            $ward_nr=$ward->getWardNrFromID($ward_id);
+                            echo $ward_nr;
+                        }else{
+                            $ward_nr=$ward->postgre_Insert_ID($dbtable,'nr',$db->Insert_ID());
+                        }
+                        header("location:nursing-station-new-createbeds.php?sid=$sid&lang=$lang&ward_nr=$ward_nr");
+                        exit;
+                    }else{echo "$sql<br>$LDDbNoSave";}
+                }else{ $ward_exists=true;}
+                break;
 		}// end of switch
-	}else{echo "$LDDbNoLink<br>";} 
+	}else{echo "$LDDbNoLink<br>";}
 }else{
-	$depts=&$dept->getAllMedical();
+	$depts=$dept->getAllMedical();
 }
 
 # Start the smarty templating
@@ -84,7 +87,7 @@ if($mode){
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('nursing');
-
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 # Added for the common header top block
 
  $smarty->assign('sToolbarTitle',"$LDCreate::$LDNewStation");
@@ -96,6 +99,7 @@ if($mode){
 
  # Window bar title
  $smarty->assign('sWindowTitle',"$LDCreate::$LDNewStation");
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'patdata.gif','0').'>');
 
 # Buffer page output
 
@@ -113,17 +117,15 @@ div.pcont{ margin-left: 3; }
 </style>
 
 <script language="javascript">
-<!-- 
+<!--
 
 function check(d)
 {
-	if((d.description.value=="")||(d.dept_nr.value=="")||(d.ward_id=="")||(d.roomprefix.value==""))
-	{
+	if((d.description.value=="")||(d.dept_nr.value=="")||(d.ward_id.value=="")||(d.roomprefix.value=="")){
 		alert("<?php echo $LDAlertIncomplete ?>");
 		return false;
 	}
-	if(parseInt(d.room_nr_start.value)>=parseInt(d.room_nr_end.value)) 
-	{
+	if(parseInt(d.room_nr_start.value)>=parseInt(d.room_nr_end.value)){
 		alert("<?php echo $LDAlertRoomNr ?>");
 		return false;
 	}
@@ -143,6 +145,9 @@ $smarty->append('JavaScript',$sTemp);
 if($rows){
 	$smarty->assign('sMascotImg','<img '.createMascot($root_path,'mascot1_r.gif','0','bottom').' align="absmiddle">');
 	$smarty->assign('sStationExists',str_replace("~station~",strtoupper($station),$LDStationExists));
+} else {
+	$smarty->assign('sMascotImg','');
+	$smarty->assign('sStationExists','');
 }
 
 $smarty->assign('LDEnterAllFields',$LDEnterAllFields);
@@ -173,11 +178,11 @@ $sTemp = '<select name="dept_nr">
 
 if($depts&&is_array($depts)){
 	while(list($x,$v)=each($depts)){
-		$sTemp = $sTemp.'	
+		$sTemp = $sTemp.'
 		<option value="'.$v['nr'].'"';
 		if($v['nr']==$dept_nr) $sTemp = $sTemp.' selected';
 		$sTemp = $sTemp.'>';
-		if(isset($$v['LD_var']) && $$v['LD_var']) $sTemp = $sTemp.$$v['LD_var'];
+		if(isset(${$v['LD_var']}) && ${$v['LD_var']}) $sTemp = $sTemp.${$v['LD_var']};
 			else $sTemp = $sTemp.$v['name_formal'];
 		$sTemp = $sTemp.'</option>';
 	}

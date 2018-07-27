@@ -1,13 +1,14 @@
 <?php
-//error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /*
 CARE2X Integrated Information System beta 2.0.1 - 2004-07-04 for Hospitals and Health Care Organizations and Services
-Copyright (C) 2002,2003,2004,2005  Elpidio Latorilla & Intellin.org	
-GNU GPL. 
+Copyright (C) 2002,2003,2004,2005  Elpidio Latorilla & Intellin.org
+GNU GPL.
 For details read file "copy_notice.txt".
 */
+
 $lang_tables[]='prompt.php';
 $lang_tables[]='person.php';
 $lang_tables[]='departments.php';
@@ -40,9 +41,9 @@ if($_COOKIE['ck_login_logged'.$sid]) $breakfile=$root_path.'main/startframe.php'
 $GLOBAL_CONFIG=array();
 $glob_obj=new GlobalConfig($GLOBAL_CONFIG);
 
-/* Get the patient global configs */	
+/* Get the patient global configs */
 $glob_obj->getConfig('patient_%');
-$glob_obj->getConfig('person_foto_path');
+$glob_obj->getConfig('person_photo_path');
 $glob_obj->getConfig('show_billable_items');
 $glob_obj->getConfig('show_doctors_list');
 
@@ -57,39 +58,39 @@ $dbtable='care_encounter';
 //$db->debug=1;
 
 	if(!empty($GLOBAL_CONFIG['patient_financial_class_single_result'])) $encounter_obj->setSingleResult(true);
-	
+
 	if(!isset($GLOBAL_CONFIG['patient_service_care_hide'])){
 	/* Get the care service classes*/
 		$care_service=$encounter_obj->AllCareServiceClassesObject();
-		
+
 		if($buff=&$encounter_obj->CareServiceClass()){
 		    $care_class=$buff->FetchRow();
-			extract($care_class);      
+			extract($care_class);
 			reset($care_class);
-		}    			  
+		}
 	}
 	if(!isset($GLOBAL_CONFIG['patient_service_room_hide'])){
 	/* Get the room service classes */
 		$room_service=$encounter_obj->AllRoomServiceClassesObject();
-		
+
 		if($buff=&$encounter_obj->RoomServiceClass()){
 			$room_class=$buff->FetchRow();
-			extract($room_class);      
+			extract($room_class);
 			reset($room_class);
-		}    			  
+		}
 	}
 	if(!isset($GLOBAL_CONFIG['patient_service_att_dr_hide'])){
 		/* Get the attending doctor service classes */
 		$att_dr_service=$encounter_obj->AllAttDrServiceClassesObject();
-		
+
 		if($buff=&$encounter_obj->AttDrServiceClass()){
 			$att_dr_class=$buff->FetchRow();
-			//while(list($x,$v)=each($att_dr_class))	$$x=$v;
-			extract($att_dr_class);      
+			//while(list($x,$v)=each($att_dr_class))	${$x}=$v;
+			extract($att_dr_class);
 			reset($att_dr_class);
-		}    			  
-	}		
-		
+		}
+	}
+
 	$encounter_obj->loadEncounterData();
 	if($encounter_obj->is_loaded) {
 		$row=$encounter_obj->encounter;
@@ -99,25 +100,25 @@ $dbtable='care_encounter';
 		if(!$is_discharged) $edit=true;
 			else $edit=false;
 		# Fetch insurance and encounter classes
-		$insurance_class=&$encounter_obj->getInsuranceClassInfo($insurance_class_nr);
-		$encounter_class=&$encounter_obj->getEncounterClassInfo($encounter_class_nr);
+		$insurance_class=$encounter_obj->getInsuranceClassInfo($insurance_class_nr);
+		$encounter_class=$encounter_obj->getEncounterClassInfo($encounter_class_nr);
 
 		//if($data_obj=&$person_obj->getAllInfoObject($pid))
 		$list='title,name_first,name_last,name_2,name_3,name_middle,name_maiden,name_others,date_birth,
 		         sex,addr_str,addr_str_nr,addr_zip,addr_citytown_nr,photo_filename';
-			
+
 		$person_obj->setPID($pid);
-		if($row=&$person_obj->getValueByList($list)) {
-			extract($row);      
-		}      
+		if($row=$person_obj->getValueByList($list)) {
+			extract($row);
+		}
 
 		$addr_citytown_name=$person_obj->CityTownName($addr_citytown_nr);
 		$encoder=$encounter_obj->RecordModifierID();
 		# Get current encounter to check if current encounter is this encounter nr
 		$current_encounter=$person_obj->CurrentEncounter($pid);
-		
+
 		# Get the overall status
-		if($stat=&$encounter_obj->AllStatus($encounter_nr)){
+		if($stat=$encounter_obj->AllStatus($encounter_nr)){
 			$enc_status=$stat->FetchRow();
 		}
 
@@ -134,25 +135,30 @@ $dbtable='care_encounter';
 			//$current_dept_name=$dept_obj->FormalName($current_dept_nr);
 			$current_dept_LDvar=$dept_obj->LDvar($current_dept_nr);
 
-			if(isset($$current_dept_LDvar)&&!empty($$current_dept_LDvar)) $current_dept_name=$$current_dept_LDvar;
+			if(isset(${$current_dept_LDvar})&&!empty(${$current_dept_LDvar})) $current_dept_name=${$current_dept_LDvar};
 				else $current_dept_name=$dept_obj->FormalName($current_dept_nr);
 		}
 
 	}
 
 	include_once($root_path.'include/core/inc_date_format_functions.php');
-        
+
 	/* Update History */
 	if(!isset($newdata) || empty($newdata)) $encounter_obj->setHistorySeen($_SESSION['sess_user_name'],$encounter_nr);
 	/* Get insurance firm name*/
-	$insurance_firm_name=$insurance_obj->getFirmName($insurance_firm_id);
-	/* Check whether config path exists, else use default path */			
-	$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_foto_path'])) ? $GLOBAL_CONFIG['person_foto_path'] : $default_photo_path;
+	if (isset($insurance_firm_id)) {
+		$insurance_firm_name=$insurance_obj->getFirmName($insurance_firm_id);
+	}
+	/* Check whether config path exists, else use default path */
+	$photo_path = (is_dir($root_path.$GLOBAL_CONFIG['person_photo_path'])) ? $GLOBAL_CONFIG['person_photo_path'] : $default_photo_path;
 
 
 /* Prepare text and resolve the numbers */
-require_once($root_path.'include/core/inc_patient_encounter_type.php');		 
+require_once($root_path.'include/core/inc_patient_encounter_type.php');
 
+if (!isset($from)) {
+	$from = '';
+}
 /* Save encounter nrs to session */
 $_SESSION['sess_pid']=$pid;
 $_SESSION['sess_en']=$encounter_nr;
@@ -173,6 +179,10 @@ require_once($root_path.'include/core/inc_photo_filename_resolve.php');
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
+
+$smarty->assign('error',FALSE);
+$smarty->assign('sWindowTitle',$LDPatientData.' ('.$encounter_nr.')');
 
 # Title in the toolbar
  $smarty->assign('sToolbarTitle',$LDPatientData.' ('.$encounter_nr.')');
@@ -191,8 +201,12 @@ require_once($root_path.'include/core/inc_photo_filename_resolve.php');
  # Hide the return button
  $smarty->assign('pbBack',FALSE);
 
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'pers_tree.gif','0').'>');
+$smarty->assign('sOnLoadJs','onLoad="if(window.focus) window.focus();document.searchform.searchkey.select();"');
+
+$smarty->assign('bSetAsForm',FALSE);
  # Collect extra javascript
- 
+
  ob_start();
 
 require($root_path.'main/imgcreator/inc_js_barcode_wristband_popwin.php');
@@ -210,19 +224,22 @@ $parent_admit = TRUE;
 include('./gui_bridge/default/gui_tabs_patadmit.php');
 
 if($is_discharged){
-	
+
 	$smarty->assign('is_discharged',TRUE);
 	$smarty->assign('sWarnIcon',"<img ".createComIcon($root_path,'warn.gif','0','absmiddle').">");
 	if($current_encounter) $smarty->assign('sDischarged',$LDEncounterClosed);
 		else $smarty->assign('sDischarged',$LDPatientIsDischarged);
+}else {
+	$smarty->assign('is_discharged',FALSE);
 }
 
 $smarty->assign('LDCaseNr',$LDCaseNr);
 $smarty->assign('encounter_nr',$encounter_nr);
-	
+
 # Create the encounter barcode image
-	
+
 if(file_exists($root_path.'cache/barcodes/en_'.$encounter_nr.'.png')) {
+	$smarty->assign('sHiddenBarcode',"");
 	$smarty->assign('sEncBarcode','<img src="'.$root_path.'cache/barcodes/en_'.$encounter_nr.'.png" border=0 width=180 height=35>');
 }else{
 	$smarty->assign('sHiddenBarcode',"<img src='".$root_path."classes/barcode/image.php?code=".$encounter_nr."&style=68&type=I25&width=180&height=50&xres=2&font=5&label=2&form_file=en' border=0 width=0 height=0>");
@@ -250,6 +267,9 @@ $smarty->assign('name_first',$name_first);
 if($death_date && $death_date != DBF_NODATE){
 	$smarty->assign('sCrossImg','<img '.createComIcon($root_path,'blackcross_sm.gif','0').'>');
 	$smarty->assign('sDeathDate',@formatDate2Local($death_date,$date_format));
+} else {
+	$smarty->assign('sCrossImg','');
+	$smarty->assign('sDeathDate','');
 }
 
 	# Set a row span counter, initialize with 6
@@ -259,57 +279,95 @@ if($death_date && $death_date != DBF_NODATE){
 		$smarty->assign('LDName2',$LDName2);
 		$smarty->assign('name_2',$name_2);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDName2','');
+		$smarty->assign('name_2','');
 	}
 
 	if($GLOBAL_CONFIG['patient_name_3_show']&&$name_3){
 		$smarty->assign('LDName3',$LDName3);
 		$smarty->assign('name_3',$name_3);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDName3','');
+		$smarty->assign('name_3','');
 	}
 
 	if($GLOBAL_CONFIG['patient_name_middle_show']&&$name_middle){
 		$smarty->assign('LDNameMid',$LDNameMid);
 		$smarty->assign('name_middle',$name_middle);
 		$iRowSpan++;
+	} else {
+		$smarty->assign('LDNameMid','');
+		$smarty->assign('name_middle','');
 	}
 	$smarty->assign('sRowSpan',"rowspan=\"$iRowSpan\"");
 
 $smarty->assign('LDBday',$LDBday);
 $smarty->assign('sBdayDate',@formatDate2Local($date_birth,$date_format));
-
+$smarty->assign('sFileBrowserInput','');
 $smarty->assign('LDSex',$LDSex);
 if($sex=='m') $smarty->assign('sSexType',$LDMale);
 	elseif($sex=='f') $smarty->assign('sSexType',$LDFemale);
-	
+
 $smarty->assign('LDBloodGroup',$LDBloodGroup);
 if($blood_group){
 	$buf='LD'.$blood_group;
-	$smarty->assign('blood_group',$$buf);
+	$smarty->assign('blood_group',${$buf});
+} else {
+	$buf='LD'.$blood_group;
+	$smarty->assign('blood_group','N/A');
 }
-
+$smarty->assign('sHiddenInputs','');
 $smarty->assign('LDAddress',$LDAddress);
 
 $smarty->assign('addr_str',$addr_str);
 $smarty->assign('addr_str_nr',$addr_str_nr);
 $smarty->assign('addr_zip',$addr_zip);
-$smarty->assign('addr_citytown',$addr_citytown_name);
+$smarty->assign('addr_citytown_name',$addr_citytown_name);
 
 //start gjergji
 //simple admission type, how the patietnt came in
 $enc_type = $encounter_obj->getEncounterType();
 while( $typeResults = $enc_type->FetchRow()) {
-	if($typeResults['type_nr'] == $admit_type )$sTemp = $typeResults['name'] ; 
+	if(isset($admit_type) and $typeResults['type_nr'] == $admit_type )$sTemp = $typeResults['name'] ;
 }
 
 $smarty->assign('LDAdmitShowTypeInput',$LDAdmitShowTypeInput);
 $smarty->assign('sAdmitShowTypeInput',$sTemp);
 
 //start simple triage
-if($triage == 'white') { $smarty->assign('sAdmitTriageWhite',$sAdmitTriageWhite); }
-elseif($triage == 'green') { $smarty->assign('sAdmitTriageGreen',$sAdmitTriageGreen); }
-elseif ($triage == 'yellow') { $smarty->assign('sAdmitTriageYellow',$sAdmitTriageYellow); }
-elseif ($triage == 'red') { $smarty->assign('sAdmitTriageRed',$sAdmitTriageRed); }
-$smarty->assign('LDShowTriageData','-');
+if (isset($triage)) {
+	if($triage == 'white') {
+		$smarty->assign('sAdmitTriageWhite',$sAdmitTriageWhite);
+		$smarty->assign('sAdmitTriageGreen','');
+		$smarty->assign('sAdmitTriageYellow','');
+		$smarty->assign('sAdmitTriageRed','');
+	}elseif($triage == 'green') {
+		$smarty->assign('sAdmitTriageWhite','');
+		$smarty->assign('sAdmitTriageGreen',$sAdmitTriageGreen);
+		$smarty->assign('sAdmitTriageYellow','');
+		$smarty->assign('sAdmitTriageRed','');
+	}elseif ($triage == 'yellow') {
+		$smarty->assign('sAdmitTriageWhite','');
+		$smarty->assign('sAdmitTriageGreen','');
+		$smarty->assign('sAdmitTriageYellow',$sAdmitTriageYellow);
+		$smarty->assign('sAdmitTriageRed','');
+	}elseif ($triage == 'red') {
+		$smarty->assign('sAdmitTriageWhite','');
+		$smarty->assign('sAdmitTriageGreen','');
+		$smarty->assign('sAdmitTriageYellow','');
+		$smarty->assign('sAdmitTriageRed',$sAdmitTriageRed);
+	}
+}else {
+	$smarty->assign('sAdmitTriageWhite','');
+	$smarty->assign('sAdmitTriageGreen','');
+	$smarty->assign('sAdmitTriageYellow','');
+	$smarty->assign('sAdmitTriageRed','');
+}
+$smarty->assign('sAdmitTriage','');
+$smarty->assign('sDeptInput','');
+$smarty->assign('LDShowTriageData','');
 
 //end simple triage
 //end : gjergji
@@ -317,13 +375,12 @@ $smarty->assign('LDShowTriageData','-');
 $smarty->assign('LDAdmitClass',$LDAdmitClass);
 
 # Suggested by Dr. Sarat Nayak to emphasize the OUTPATIENT encounter type
-
-if (isset($$encounter_class['LD_var']) && !empty($$encounter_class['LD_var'])){
-	$eclass=$$encounter_class['LD_var'];
+if (isset(${$encounter_class['LD_var']}) && !empty(${$encounter_class['LD_var']})){
+	$eclass=${$encounter_class['LD_var']};
 	//$fcolor='red';
 }else{
 	$eclass= $encounter_class['name'];
-} 
+}
 
 if($encounter_class_nr==1){
 	$fcolor='black';
@@ -335,16 +392,18 @@ if($encounter_class_nr==1){
 $smarty->assign('sAdmitClassInput',"<font color=$fcolor>$eclass</font>");
 
 if($encounter_class_nr==1){
-	
+
+	$smarty->assign('LDDepartment',"");
 	$smarty->assign('LDWard',$LDWard);
 
 	$smarty->assign('sWardInput','<a href="'.$root_path.'modules/nursing/'.strtr('nursing-station-pass.php'.URL_APPEND.'&rt=pflege&edit=1&station='.$current_ward_name.'&location_id='.$current_ward_name.'&ward_nr='.$current_ward_nr,' ',' ').'">'.$current_ward_name.'</a>');
 
 }elseif($encounter_class_nr==2){
 
-	$smarty->assign('LDWard',"$LDClinic/$LDDepartment");
+	$smarty->assign('LDDepartment',"$LDClinic/$LDDepartment");
+	$smarty->assign('LDWard',"");
 
-	$smarty->assign('sWardInput','<a href="'.$root_path.'modules/ambulatory/'.strtr('amb_clinic_patients_pass.php'.URL_APPEND.'&rt=pflege&edit=1&dept='.$$current_dept_LDvar.'&location_id='.$$current_dept_LDvar.'&dept_nr='.$current_dept_nr,' ',' ').'">'.$current_dept_name.'</a>');
+	$smarty->assign('sWardInput','<a href="'.$root_path.'modules/ambulatory/'.strtr('amb_clinic_patients_pass.php'.URL_APPEND.'&rt=pflege&edit=1&dept='.${$current_dept_LDvar}.'&location_id='.${$current_dept_LDvar}.'&dept_nr='.$current_dept_nr,' ',' ').'">'.$current_dept_name.'</a>');
 
 }
 
@@ -359,11 +418,15 @@ $smarty->assign('referrer_notes',$referrer_notes);
 
 $smarty->assign('LDBillType',$LDBillType);
 
-if (isset($$insurance_class['LD_var'])&&!empty($$insurance_class['LD_var'])) $smarty->assign('sBillTypeInput',$$insurance_class['LD_var']);
-    else $smarty->assign('sBillTypeInput',$insurance_class['name']); 
-	
+if (isset(${$insurance_class['LD_var']})&&!empty(${$insurance_class['LD_var']})) $smarty->assign('sBillTypeInput',${$insurance_class['LD_var']});
+    else $smarty->assign('sBillTypeInput',$insurance_class['name']);
+
 $smarty->assign('LDInsuranceNr',$LDInsuranceNr);
-if(isset($insurance_nr) && $insurance_nr) $smarty->assign('insurance_nr',$insurance_nr);
+if(isset($insurance_nr) && $insurance_nr) {
+	$smarty->assign('insurance_nr',$insurance_nr);
+} else {
+	$smarty->assign('insurance_nr','');
+}
 
 $smarty->assign('LDInsuranceCo',$LDInsuranceCo);
 $smarty->assign('insurance_firm_name',$insurance_firm_name);
@@ -376,8 +439,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_care_hide']) && $sc_care_class_nr){
 
 	while($buffer=$care_service->FetchRow()){
 		if($sc_care_class_nr==$buffer['class_nr']){
-			if(empty($$buffer['LD_var'])) $smarty->assign('sCareServiceInput',$buffer['name']);
-				else $smarty->assign('sCareServiceInput',$$buffer['LD_var']);
+			if(empty(${$buffer['LD_var']})) $smarty->assign('sCareServiceInput',$buffer['name']);
+				else $smarty->assign('sCareServiceInput',${$buffer['LD_var']});
 			break;
 		}
 	}
@@ -386,6 +449,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_care_hide']) && $sc_care_class_nr){
 		$smarty->assign('sCSFromInput',' [ '.@formatDate2Local($sc_care_start,$date_format).' ] ');
 		$smarty->assign('sCSToInput',' [ '.@formatDate2Local($sc_care_end,$date_format).' ]');
 	}
+} else {
+	$smarty->assign('LDCareServiceClass','');
 }
 
 
@@ -394,8 +459,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_room_hide']) && $sc_room_class_nr){
 
 	while($buffer=$room_service->FetchRow()){
 		if($sc_room_class_nr==$buffer['class_nr']){
-			if(empty($$buffer['LD_var'])) $smarty->assign('sCareRoomInput',$buffer['name']); 
-				else $smarty->assign('sCareRoomInput',$$buffer['LD_var']);
+			if(empty(${$buffer['LD_var']})) $smarty->assign('sCareRoomInput',$buffer['name']);
+				else $smarty->assign('sCareRoomInput',${$buffer['LD_var']});
 				break;
 		}
 	}
@@ -403,6 +468,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_room_hide']) && $sc_room_class_nr){
 		$smarty->assign('sRSFromInput',' [ '.@formatDate2Local($sc_room_start,$date_format).' ] ');
 		$smarty->assign('sRSToInput',' [ '.@formatDate2Local($sc_room_end,$date_format).' ]');
 	}
+} else {
+	$smarty->assign('LDRoomServiceClass','');
 }
 
 if(!isset($GLOBAL_CONFIG['patient_service_att_dr_hide']) && $sc_att_dr_class_nr){
@@ -410,8 +477,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_att_dr_hide']) && $sc_att_dr_class_nr)
 
 	while($buffer=$att_dr_service->FetchRow()){
 		if($sc_att_dr_class_nr==$buffer['class_nr']){
-			if(empty($$buffer['LD_var'])) $smarty->assign('sCareDrInput',$buffer['name']);
-				else $smarty->assign('sCareDrInput',$$buffer['LD_var']);
+			if(empty(${$buffer['LD_var']})) $smarty->assign('sCareDrInput',$buffer['name']);
+				else $smarty->assign('sCareDrInput',${$buffer['LD_var']});
 			break;
 		}
 	}
@@ -419,6 +486,8 @@ if(!isset($GLOBAL_CONFIG['patient_service_att_dr_hide']) && $sc_att_dr_class_nr)
 		$smarty->assign('sDSFromInput',' [ '.@formatDate2Local($sc_att_dr_start,$date_format).' ] ');
 		$smarty->assign('sDSToInput',' [ '.@formatDate2Local($sc_att_dr_end,$date_format).' ]');
 	}
+} else {
+	$smarty->assign('LDAttDrServiceClass','');
 }
 
 //gjergji : billable items list
@@ -431,6 +500,8 @@ if(isset($GLOBAL_CONFIG['show_billable_items']) && $encounter_class_nr == 2){
 		$smarty->assign('sAdmitBillItem',"----");
 	}
 
+} else {
+	$smarty->assign('LDAdmitBillItem','');
 }
 
 //gjergji : refered to doctor
@@ -447,17 +518,25 @@ if(isset($GLOBAL_CONFIG['show_doctors_list']) && $encounter_class_nr == 2){
 	} else {
 		$smarty->assign('sAdmitDoctorRefered',"----");
 	}
+} else {
+	$smarty->assign('LDAdmitDoctorRefered','');
 }
 //end gjergji : refered to doctor
 
 $smarty->assign('LDAdmitBy',$LDAdmitBy);
 if (empty($encoder)) $encoder = $_COOKIE[$local_user.$sid];
 $smarty->assign('encoder',$encoder);
-
+$smarty->assign('pbRefresh','');
+$smarty->assign('pbSave','');
+$smarty->assign('pbRegData','');
+$smarty->assign('pbCancel','');
 # Buffer the options block
+$smarty->assign('sErrorHidInputs','');
+$smarty->assign('sUpdateHidInputs','');
+$smarty->assign('sNewDataForm','');
 
 ob_start();
-	
+
 	require('./gui_bridge/default/gui_patient_encounter_showdata_options.php');
 	$sTemp = ob_get_contents();
 
@@ -470,7 +549,7 @@ if(!$is_discharged){
 
 	# Buffer the control buttons
 	ob_start();
-		
+
 		include('./include/bottom_controls_admission.inc.php');
 		$sTemp = ob_get_contents();
 

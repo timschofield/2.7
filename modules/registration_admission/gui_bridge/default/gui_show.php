@@ -16,18 +16,23 @@ if($_COOKIE["ck_login_logged".$sid]) $breakfile = $root_path."main/startframe.ph
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('common');
- 
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
+if (!isset($rows)) {
+	$rows=0;
+	$smarty->assign('bShowNoRecord',true);
+} else {
+	$smarty->assign('bShowNoRecord',false);
+}
 if($parent_admit) $sTitleNr= ($_SESSION['sess_full_en']);
 	else $sTitleNr = ($_SESSION['sess_full_pid']);
 
 # Title in the toolbar
+ $smarty->assign('sWindowTitle',"$page_title ($sTitleNr)");
  $smarty->assign('sToolbarTitle',"$page_title ($sTitleNr)");
-
  # href for help button
  $smarty->assign('pbHelp',"javascript:gethelp('submenu1.php','$LDPatientRegister')");
-
+$smarty->assign('sTitleImage','<img '.createComIcon($root_path,'calendar.gif','0').'>');
  $smarty->assign('breakfile',$breakfile);
-
  # Window bar title
  $smarty->assign('title',"$page_title ( $sTitleNr)");
 
@@ -38,7 +43,10 @@ if($parent_admit) $sTitleNr= ($_SESSION['sess_full_en']);
  $smarty->assign('pbHelp',"javascript:gethelp('notes_router.php','echo $notestype','".strtr($subtitle,' ','+')."','$mode','$rows')");
 
   # href for return button
- $smarty->assign('pbBack',$returnfile.URL_APPEND.'&pid='.$_SESSION['sess_pid'].'&target='.$target.'&mode=show&type_nr='.$type_nr);
+ if (!isset($type_nr))
+	$smarty->assign('pbBack',$returnfile.URL_APPEND.'&pid='.$_SESSION['sess_pid'].'&target='.$target.'&mode=show');
+ else
+	$smarty->assign('pbBack',$returnfile.URL_APPEND.'&pid='.$_SESSION['sess_pid'].'&target='.$target.'&mode=show&type_nr='.$type_nr);
 
 # Start buffering extra javascript output
 ob_start();
@@ -46,7 +54,7 @@ ob_start();
 ?>
 
 <script  language="javascript">
-<!-- 
+<!--
 
 <?php require($root_path.'include/core/inc_checkdate_lang.php'); ?>
 
@@ -56,7 +64,7 @@ function popRecordHistory(table,pid) {
 }
 -->
 </script>
-<?php 
+<?php
 if($parent_admit) include($root_path.'main/imgcreator/inc_js_barcode_wristband_popwin.php');
 
 $sTemp = ob_get_contents();
@@ -86,6 +94,8 @@ if($parent_admit&&$is_discharged){
 	$smarty->assign('sWarnIcon',"<img ".createComIcon($root_path,'warn.gif','0','absmiddle',TRUE).">");
 	if($current_encounter) $smarty->assign('sDischarged',$LDEncounterClosed);
 		else $smarty->assign('sDischarged',$LDPatientIsDischarged);
+}else {
+	$smarty->assign('is_discharged',false);
 }
 
 if($parent_admit) $smarty->assign('LDCaseNr',$LDAdmitNr);
@@ -102,35 +112,50 @@ $smarty->assign('LDLastName',$LDLastName);
 $smarty->assign('name_last',$name_last);
 $smarty->assign('LDFirstName',$LDFirstName);
 $smarty->assign('name_first',$name_first);
+$smarty->assign('name_2',$name_2);
+$smarty->assign('name_3',$name_3);
+$smarty->assign('name_middle',$name_middle);
 
 # If person is dead show a black cross and assign death date
 
 if($death_date && $death_date != DBF_NODATE){
 	$smarty->assign('sCrossImg','<img '.createComIcon($root_path,'blackcross_sm.gif','0','',TRUE).'>');
 	$smarty->assign('sDeathDate',@formatDate2Local($death_date,$date_format));
+} else {
+	$smarty->assign('sCrossImg','');
+	$smarty->assign('sDeathDate','');
 }
 
 	# Set a row span counter, initialize with 7
 	$iRowSpan = 7;
-
+	/*
+	 * TODO: Check - if patient_name_2_show is really a valid variable in this array (always...)
 	if($GLOBAL_CONFIG['patient_name_2_show']&&$name_2){
 		$smarty->assign('LDName2',$LDName2);
 		$smarty->assign('name_2',$name_2);
 		$iRowSpan++;
 	}
+	* */
 
+	/*
+	 * TODO: Check - if patient_name_3_show is really a valid variable in this array (always...)
 	if($GLOBAL_CONFIG['patient_name_3_show']&&$name_3){
 		$smarty->assign('LDName3',$LDName3);
 		$smarty->assign('name_3',$name_3);
 		$iRowSpan++;
 	}
+	*/
 
+	/*
+	 * TODO: Check - if patient_name_middle_show is really a valid variable in this array (always...)
 	if($GLOBAL_CONFIG['patient_name_middle_show']&&$name_middle){
 		$smarty->assign('LDNameMid',$LDNameMid);
 		$smarty->assign('name_middle',$name_middle);
 		$iRowSpan++;
 	}
-		
+	*/
+
+
 $smarty->assign('sRowSpan',"rowspan=\"$iRowSpan\"");
 
 $smarty->assign('LDBday',$LDBday);
@@ -143,7 +168,7 @@ if($sex=='m') $smarty->assign('sSexType',$LDMale);
 $smarty->assign('LDBloodGroup',$LDBloodGroup);
 if($blood_group){
 	$buf='LD'.$blood_group;
-	$smarty->assign('blood_group',$$buf);
+	$smarty->assign('blood_group',${$buf});
 }
 
 /* Buffer and load the options table  */
@@ -168,7 +193,7 @@ if($mode=='show'){
 	$tbg= 'background="'.$root_path.'gui/img/common/'.$theme_com_icon.'/'.$bgimg.'"';
 
 	if($rows){
-		
+
 		# Buffer the option block
 		ob_start();
 			include('./gui_bridge/default/gui_'.$thisfile);
@@ -179,7 +204,7 @@ if($mode=='show'){
 	}else{
 
 		$smarty->assign('bShowNoRecord',TRUE);
-		
+
 		$smarty->assign('sMascotImg','<img '.createMascot($root_path,'mascot1_r.gif','0','absmiddle').'>');
 		$smarty->assign('norecordyet',$norecordyet);
 
@@ -187,8 +212,11 @@ if($mode=='show'){
 			$smarty->assign('sPromptIcon','<img '.createComIcon($root_path,'bul_arrowgrnlrg.gif','0','absmiddle',TRUE).'>');
 			$smarty->assign('sPromptLink','<a href="'.$thisfile.URL_APPEND.'&pid='.$_SESSION['sess_pid'].'&target='.$target.'&mode=new">'.$LDEnterNewRecord.'</a>');
  		}else{
-			if(file_exists('./gui_bridge/default/gui_person_createnew_'.$thisfile)) include('./gui_bridge/default/gui_person_createnew_'.$thisfile);
+			$smarty->assign('sPromptIcon','');
+			$smarty->assign('sPromptLink','');
+ 			if(file_exists('./gui_bridge/default/gui_person_createnew_'.$thisfile)) include('./gui_bridge/default/gui_person_createnew_'.$thisfile);
 		}
+		$smarty->assign('sOptionBlock','');
 	}
 }else {
 	# Buffer the option input block
@@ -197,6 +225,7 @@ if($mode=='show'){
 		$sTemp = ob_get_contents();
 	ob_end_clean();
 	$smarty->assign('sOptionBlock',$sTemp);
+	$smarty->assign('bShowNoRecord',False);
 }
 
 # Buffer the bottom controls
@@ -219,9 +248,17 @@ $smarty->assign('sBottomControls',$sTemp);
 
 $smarty->assign('pbBottomClose','<a href="'.$breakfile.'"><img '.createLDImgSrc($root_path,'close2.gif','0').'  title="'.$LDCancel.'"  align="absmiddle"></a>');
 
+$smarty->assign('pbPersonData','');
+$smarty->assign('pbAdmitData','');
+$smarty->assign('pbMakeBarcode','');
+$smarty->assign('pbMakeWristBands','');
+
+$smarty->assign('sAdmitLink','');
+$smarty->assign('sSearchLink','');
+$smarty->assign('sArchiveLink','');
+
 
 $smarty->assign('sMainBlockIncludeFile','registration_admission/common_option.tpl');
-
 
 $smarty->display('common/mainframe.tpl');
 

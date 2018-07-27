@@ -23,7 +23,7 @@ class BaseAction {
 
 	var $grouping = true;
 
-	function BaseAction($title, $params){
+	function __construct($title, $params){
 		$this->title = $title;
 		$this->params = $params;
 	}

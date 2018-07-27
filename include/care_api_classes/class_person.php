@@ -6,7 +6,7 @@
 */
 require_once($root_path.'include/care_api_classes/class_core.php');
 /**
-*  Person methods. 
+*  Person methods.
 *
 * Note this class should be instantiated only after a "$db" adodb  connector object  has been established by an adodb instance
 * @author Elpidio Latorilla
@@ -99,7 +99,7 @@ class Person extends Core {
 	* @var array
 	*/
 	var $basic_list='pid,title,name_first,name_last,name_2,name_3,name_middle,name_maiden,name_others,date_birth,
-				           sex,addr_str,addr_str_nr,addr_zip,addr_citytown_nr,photo_filename';
+				           sex,addr_str,addr_str_nr,addr_zip,addr_citytown_nr,photo_filename,blood_group';
 	/**
 	* Field names of table care_person
 	* @var array
@@ -160,7 +160,7 @@ class Person extends Core {
 	* Constructor
 	* @param int PID number
 	*/
-	function Person ($pid='') {
+	function __construct($pid='') {
 	    $this->pid=$pid;
 		$this->ref_array=$this->elems_array;
 		$this->coretable=$this->tb_person;
@@ -219,7 +219,7 @@ class Person extends Core {
 		while(list($x,$v)=each($this->elems_array)) {
 	    	if(isset($_POST[$v])&&!empty($_POST[$v])) $this->data_array[$v]=$_POST[$v];
 	    }
-    }	
+    }
 	/**
 	* Database transaction. Uses the adodb transaction method.
 	* @access private
@@ -239,7 +239,7 @@ class Person extends Core {
 	        $db->RollbackTrans();
 			return false;
 	    }
-    }	
+    }
 	/**
 	* Inserts the data into the care_person table.
 	* @access private
@@ -247,6 +247,7 @@ class Person extends Core {
 	* @return boolean
 	*/
     function insertDataFromArray(&$array) {
+		global $root_path, $db;
 		$x='';
 		$v='';
 		$index='';
@@ -258,9 +259,95 @@ class Person extends Core {
 		}
 		$index=substr_replace($index,'',(strlen($index))-1);
 		$values=substr_replace($values,'',(strlen($values))-1);
-
 		$this->sql="INSERT INTO $this->tb_person ($index) VALUES ($values)";
-		return $this->Transact();
+		$this->Transact();
+		require_once($root_path.'include/care_api_classes/class_globalconfig.php');
+		$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
+		$glob_obj->getConfig();
+		/* Fetch the pid */
+		$DataArray['name_last'] = $array['name_last'];
+		$DataArray['name_first'] = $array['name_first'];
+		$DataArray['date_birth'] = $array['date_birth'];
+		$DataArray['sex'] = $array['sex'];
+		$PIDResult = $this->PIDbyData($DataArray);
+		$PIDArray = $PIDResult->FetchRow();
+		$this->pid = $PIDArray['pid'];
+		if($GLOBAL_CONFIG['kwamoja_database'] != '') {
+			/* Insert into the KwaMoja database */
+			/* Get the city/town name */
+			$CitySQL = "SELECT name FROM care_address_citytown WHERE nr='" . $array['addr_citytown_nr'] . "'";
+			$CityResult = $db->Execute($CitySQL);
+			$CityRow = $CityResult->FetchRow();
+
+			/* Get the default currency code */
+			$DefaultCurrencySQL = "SELECT currencydefault FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".companies";
+			$DefaultCurrencyResult = $db->Execute($DefaultCurrencySQL);
+			$DefaultCurrencyRow = $DefaultCurrencyResult->FetchRow();
+
+			/* Get the default price list */
+			$DefaultPriceListSQL = "SELECT confvalue
+									FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".config
+									WHERE confname='DefaultPriceList'";
+			$DefaultPriceListResult = $db->Execute($DefaultPriceListSQL);
+			$DefaultPriceListRow = $DefaultPriceListResult->FetchRow();
+			$KwaMojaInsertPatientSQL = "INSERT INTO " . $GLOBAL_CONFIG['kwamoja_database'] . ".debtorsmaster (
+											debtorno,
+											name,
+											address1,
+											address2,
+											address3,
+											currcode,
+											salestype,
+											clientsince,
+											paymentterms,
+											holdreason,
+											typeid,
+											gender
+										) VALUES (
+											'" . $PIDArray['pid'] . "',
+											'" . $array['name_first'] . ' ' . $array['name_last'] . "',
+											'" . $array['addr_str_nr'] . ' ' . $array['addr_str'] . "',
+											'" . $CityRow['name'] . "',
+											'" . $array['addr_zip'] . "',
+											'" . $DefaultCurrencyRow['currencydefault'] . "',
+											'" . $DefaultPriceListRow['confvalue'] . "',
+											CURRENT_DATE,
+											'" . $GLOBAL_CONFIG['kwamoja_default_terms'] . "',
+											'" . $GLOBAL_CONFIG['kwamoja_default_reason'] . "',
+											'" . $GLOBAL_CONFIG['kwamoja_default_debtor_type'] . "',
+											'" . $array['sex'] . "'
+										)";
+			$Result = $db->Execute($KwaMojaInsertPatientSQL);
+			if ($Result) {
+				/* As this is a new customer being created we need
+				 * to create a default branch for it. This is always
+				 * called CASH
+				 */
+				 $KwaMojaInsertBranchSQL = "INSERT INTO " . $GLOBAL_CONFIG['kwamoja_database'] . ".custbranch (
+												branchcode,
+												debtorno,
+												brname,
+												area,
+												salesman,
+												defaultlocation,
+												defaultshipvia,
+												taxgroupid,
+												phoneno
+											) VALUES (
+												'CASH',
+												'" . $PIDArray['pid'] . "',
+												'CASH - " . $array['name_first'] . ' ' . $array['name_last'] . "',
+												'" . $GLOBAL_CONFIG['kwamoja_default_area'] . "',
+												'" . $GLOBAL_CONFIG['kwamoja_default_salesman'] . "',
+												'" . $GLOBAL_CONFIG['kwamoja_default_location'] . "',
+												'" . $GLOBAL_CONFIG['kwamoja_default_shipper'] . "',
+												'" . $GLOBAL_CONFIG['kwamoja_default_tax_group'] . "',
+												'" . $PhoneNumber . "'
+											)";
+				$Result = $db->Execute($KwaMojaInsertBranchSQL);
+			}
+		}
+		return true;
 	}
 	/**
 	* Inserts the data from the internal buffer array into the care_person table.
@@ -278,11 +365,11 @@ class Person extends Core {
 	}
 
 /*    function updateDataFromArray(&$array,$item_nr='') {
-	    
+
 		$x='';
 		$v='';
 		$sql='';
-		
+
 		if(!is_array($array)) return false;
 		if(empty($item_nr)||!is_numeric($item_nr)) return false;
 		while(list($x,$v)=each($array)) {
@@ -290,9 +377,9 @@ class Person extends Core {
 		    	else $sql.="$x='$v',";
 		}
 		$sql=substr_replace($sql,'',(strlen($sql))-1);
-		
+
         $this->sql="UPDATE $this->tb_person SET $sql WHERE pid=$item_nr";
-		
+
 		return $this->Transact();
 	}
 */
@@ -311,7 +398,7 @@ class Person extends Core {
 	*/
 	function getAllInfoObject($pid='') {
 	    global $db;
-		 
+
 		if(!$this->internResolvePID($pid)) return false;
 	    $this->sql="SELECT p.*, addr.name AS addr_citytown_name,ethnic.name AS ethnic_orig_txt
 					FROM $this->tb_person AS p
@@ -321,7 +408,7 @@ class Person extends Core {
         //echo $this->sql;
         if($this->result=$db->Execute($this->sql)) {
             if($this->result->RecordCount()) {
-				 return $this->result;	 
+				 return $this->result;
 			} else { return false; }
 		} else { return false; }
 	}
@@ -341,11 +428,11 @@ class Person extends Core {
 		 $x='';
 		 $v='';
 		if(!$this->internResolvePID($pid)) return false;
-		
-	    $this->sql="SELECT p.* , addr.name AS citytown 
+
+	    $this->sql="SELECT p.* , addr.name AS citytown
 					FROM $this->tb_person AS p LEFT JOIN $this->tb_citytown AS addr ON p.addr_citytown_nr=addr.nr
 					WHERE p.pid=$this->pid";
-        
+
         	if($this->result=$db->Execute($this->sql)) {
 
 			if($this->result->RecordCount()) {
@@ -393,13 +480,13 @@ class Person extends Core {
 	*/
 	function getValueByList($list,$pid='') {
 	    global $db;
-	
+
 		if(empty($list)) return false;
 		if(!$this->internResolvePID($pid)) return false;
 		$this->sql="SELECT $list FROM $this->tb_person WHERE pid=$this->pid";
         if($this->result=$db->Execute($this->sql)) {
             if($this->result->RecordCount()) {
-				$this->person=$this->result->FetchRow();	 
+				$this->person=$this->result->FetchRow();
 				return $this->person;
 			} else { return false; }
 		} else { return false; }
@@ -417,13 +504,13 @@ class Person extends Core {
 	*/
 	function preloadPersonInfo($pid) {
 	    global $db;
-	    
+
 		if(!$this->internResolvePID($pid)) return false;
 		$this->sql="SELECT * FROM $this->tb_person WHERE pid=$this->pid";
         if($this->result=$db->Execute($this->sql)) {
             if($this->result->RecordCount()) {
-				 $this->person=$this->result->FetchRow();	
-				 $this->is_preloaded=true; 
+				 $this->person=$this->result->FetchRow();
+				 $this->is_preloaded=true;
 				 return true;
 			} else { return false; }
 		} else { return false; }
@@ -753,11 +840,11 @@ class Person extends Core {
 	    global $db;
 		if(!$this->is_preloaded) $this->sql="SELECT name FROM $this->tb_citytown WHERE nr=$code_nr";
             else $this->sql="SELECT name FROM $this->tb_citytown WHERE nr=".$this->CityTownCode();
-			
+
 		//echo $this->sql;exit;
         if($this->result=$db->Execute($this->sql)) {
             if($this->result->RecordCount()) {
-				 $this->row=$this->result->FetchRow();	 
+				 $this->row=$this->result->FetchRow();
 				 return $this->row['name'];
 			} else { return false; }
 		} else { return false; }
@@ -873,7 +960,7 @@ class Person extends Core {
 			if(empty($order_dir)) $order_dir='ASC';
 			$this->is_nr=false;
 		}
-		
+
 		return $this->SearchSelect($searchkey,'','',$order_item,$order_dir);
 /*
 		$this->sql="SELECT pid, name_last, name_first, date_birth, sex FROM $this->tb_person WHERE status NOT IN ($this->dead_stat) ";
@@ -891,7 +978,7 @@ class Person extends Core {
 */
 	}
 	/**
-	* Searches and returns a block list of persons based on search key. 
+	* Searches and returns a block list of persons based on search key.
 	*
 	* The following can be set:
 	* - maximum number of rows in the returned list
@@ -963,13 +1050,37 @@ class Person extends Core {
 
 			# Arrange the values, ln= lastname, fn=first name, bd = birthday
 			if($lastnamefirst){
-				$fn=$comp[1];
-				$ln=$comp[0];
-				$bd=$comp[2];
+				if (isset($comp[1])) {
+					$fn=$comp[1];
+				} else {
+					$fn='';
+				}
+				if (isset($comp[0])) {
+					$ln=$comp[0];
+				} else {
+					$ln='';
+				}
+				if (isset($comp[2])) {
+					$bd=$comp[2];
+				} else {
+					$bd='';
+				}
 			}else{
-				$fn=$comp[0];
-				$ln=$comp[1];
-				$bd=$comp[2];
+				if (isset($comp[0])) {
+					$fn=$comp[0];
+				} else {
+					$fn='';
+				}
+				if (isset($comp[1])) {
+					$ln=$comp[1];
+				} else {
+					$ln='';
+				}
+				if (isset($comp[2])) {
+					$bd=$comp[2];
+				} else {
+					$bd='';
+				}
 			}
 			# Check the size of the comp
 			if(sizeof($comp)>1){
@@ -1010,12 +1121,16 @@ class Person extends Core {
 
 
 		$this->buffer=$this->tb_person.$sql2;
-		
+
 		# Save the query in buffer for pagination
 		//$this->buffer=$fromwhere;
 		//$sql2.=' AND status NOT IN ("void","hidden","deleted","inactive")  ORDER BY '.$oitem.' '.$odir;
 		# Set the sorting directive
-		if(isset($oitem)&&!empty($oitem)) $sql3 =" ORDER BY $oitem $odir";
+		if(isset($oitem)&&!empty($oitem)) {
+			$sql3 =" ORDER BY $oitem $odir";
+		} else {
+			$sql3 =" ";
+		}
 
 		$this->sql='SELECT pid, name_last, name_first, date_birth, addr_zip, sex, death_date, status FROM '.$this->buffer.$sql3;
 
@@ -1048,7 +1163,7 @@ class Person extends Core {
 	}
 	/**
 	* Sets death information.
-	* 
+	*
 	* The data must be passed by reference with associative array.
 	* Data array must have the following index keys.
 	* - 'death_date' = date of death
@@ -1082,7 +1197,7 @@ class Person extends Core {
 		if(!$oid) return false;
 		else return $this->postgre_Insert_ID($this->tb_person,'pid',$oid);
 	}
-	
+
 	/**
 	* returns basic data of living person(s) based on family name, first name & b-day
 	*
@@ -1117,7 +1232,7 @@ class Person extends Core {
 		if(empty($pid)||empty($fn)) return false;
 		if(!$this->internResolvePID($pid)) return false;
 
-		 $this->sql="UPDATE $this->tb_person SET photo_filename='$fn', 
+		 $this->sql="UPDATE $this->tb_person SET photo_filename='$fn',
 		 			history=".$this->ConcatHistory("\nPhoto set ".date('Y-m-d H:i:s')." = ".$_SESSION['sess_user_name'])." WHERE pid=$this->pid";
 		return $this->Transact($this->sql);
 	}

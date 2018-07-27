@@ -1,12 +1,12 @@
 <?php
-error_reporting(E_COMPILE_ERROR|E_ERROR|E_CORE_ERROR);
 require('./roots.php');
 require($root_path.'include/core/inc_environment_global.php');
+error_reporting($ErrorLevel);
 /**
 * CARE2X Integrated Hospital Information System Deployment 2.1 - 2004-10-02
 * GNU General Public License
 * Copyright 2002,2003,2004,2005 Elpidio Latorilla
-* elpidio@care2x.org, 
+* elpidio@care2x.org,
 *
 * See the file "copy_notice.txt" for the licence notice
 */
@@ -15,25 +15,48 @@ $local_user='ck_edv_user';
 require_once($root_path.'include/core/inc_front_chain_lang.php');
 
 require_once($root_path.'include/care_api_classes/class_core.php');
-$core=& new Core();
+$core= new Core();
+
+include_once($root_path.'include/care_api_classes/class_globalconfig.php');
+$GLOBAL_CONFIG=array();
+$glob_obj=new GlobalConfig($GLOBAL_CONFIG);
+$glob_obj->getConfig('kwamoja%');
 
 $breakfile='edv-system-admi-welcome.php'.URL_APPEND.'&target=currency_admin';
 $thisfile='edv_system_format_currency_add.php';
-if($from=='set') $returnfile='edv_system_format_currency_set.php'.URL_APPEND.'&from=add';
+if(isset($from) and $from=='set') $returnfile='edv_system_format_currency_set.php'.URL_APPEND.'&from=add';
  else $returnfile=$breakfile;
 
 $dbtable='care_currency';
 //$db->debug=1;
 
+if (!isset($mode)) {
+	$mode = '';
+}
+
+if (!isset($item_no)) {
+	$item_no = '';
+}
+
 if(($mode=='save') && $short_name&&$long_name&&$info){
 
     if($item_no){
-	   $sql="UPDATE $dbtable SET short_name='$short_name',
+		if($GLOBAL_CONFIG['kwamoja_database']=='') {
+			$sql="UPDATE $dbtable SET short_name='$short_name',
 	                                               long_name='$long_name',
 							info='$info',
 							modify_id='".$_SESSION['sess_user_name']."',
 							modify_time='".date('YmdHis')."'
 							WHERE item_no='$item_no'";
+		} else {
+			$sql = "UPDATE  " . $GLOBAL_CONFIG['kwamoja_database'] . ".currencies
+			 currabrev AS item_no,
+					symbol AS short_name,
+					currabrev AS long_name,
+					CONCAT(currency,' (ISO=',currabrev,')') AS info
+					FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".currencies
+					WHERE currabrev='" . $item_no . "'";
+		}
 	   if($ergebnis=$core->Transact($sql))
        {
 		 if($db->Affected_Rows())
@@ -56,17 +79,17 @@ if(($mode=='save') && $short_name&&$long_name&&$info){
 	else
 	{
 		$info_exist=0;
-		
+
 	   // Check first if the info already exists
-	   
+
 	   $sql="SELECT item_no FROM $dbtable WHERE short_name='$short_name' AND long_name $sql_LIKE '$long_name'";
-	   
+
 	   if($ergebnis=$db->Execute($sql))
        {
 		  if(!$ergebnis->RecordCount())
-		  {   
-	
-		 	$sql="INSERT INTO $dbtable 
+		  {
+
+		 	$sql="INSERT INTO $dbtable
 			                          (short_name,
 						long_name,
 						info,
@@ -101,7 +124,7 @@ if(($mode=='save') && $short_name&&$long_name&&$info){
 		      $info_exist=1;
 		  }
 		}
-		 else echo "<p>".$sql."<p>$LDDbNoRead"; 
+		 else echo "<p>".$sql."<p>$LDDbNoRead";
 	  }
 
 }
@@ -109,7 +132,16 @@ if(($mode=='save') && $short_name&&$long_name&&$info){
 if(($mode=='edit') && $item_no)
 {
 
-    $sql="SELECT short_name,long_name,info FROM care_currency WHERE item_no='$item_no'";
+	if($GLOBAL_CONFIG['kwamoja_database']=='') {
+		$sql="SELECT short_name,long_name,info FROM care_currency WHERE item_no='$item_no'";
+	} else {
+		$sql = "SELECT currabrev AS item_no,
+					symbol AS short_name,
+					currabrev AS long_name,
+					CONCAT(currency,' (ISO=',currabrev,')') AS info
+					FROM " . $GLOBAL_CONFIG['kwamoja_database'] . ".currencies
+					WHERE currabrev='" . $item_no . "'";
+	}
 	if($ergebnis=$db->Execute($sql))
 	{
 	  if($ergebnis->RecordCount())
@@ -136,29 +168,31 @@ if(($mode=='edit') && $item_no)
 
  require_once($root_path.'gui/smarty_template/smarty_care.class.php');
  $smarty = new smarty_care('system_admin');
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # Title in toolbar
  $smarty->assign('sToolbarTitle',$LDCurrencyAdmin);
+ require_once($root_path.'include/core/inc_default_smarty_values.php');
 
 # href for return button
  $smarty->assign('pbBack',$returnfile);
 
  # href for help button
  $smarty->assign('pbHelp',"javascript:gethelp('currency_add.php')");
-
+ $smarty->assign('sTitleImage','<img '.createComIcon($root_path,'currency.png','0').'>');
  # href for close button
  $smarty->assign('breakfile',$breakfile);
 
  # Window bar title
  $smarty->assign('sWindowTitle',$LDCurrencyAdmin);
- 
+
  # Body OnLoad Javascript
  if(!$item_no) $smarty->assign('sOnLoadJs','onLoad="document.c_form.short_name.focus()"');
- 
+
  # Buffer page output
  ob_start();
 
-if($info_exist)
+if(isset($info_exist))
 {
 ?>
 <font color="#990000" size=4 face="verdana,arial">
@@ -178,26 +212,35 @@ if($info_exist)
 <?php
 if(($mode=='save') && $new_currency_ok) echo '<img '.createMascot($root_path,'mascot1_r.gif','0','absmiddle').'> '.$saved_msg.'<p>';
 if($item_no) echo $LDPlsEnterUpdate; else echo $LDPlsAddCurrency;
+if (!isset($short_name)) {
+	$short_name = '';
+}
+if (!isset($long_name)) {
+	$long_name = '';
+}
+if (!isset($info)) {
+	$info = '';
+}
 ?>
 </font>
 <p>
 
 <form action="<?php echo $thisfile ?>" method="post" name="c_form">
-<table border=0 cellspacing=1 cellpadding=5>  
+<table border=0 cellspacing=1 cellpadding=5>
 <tr>
 	<td bgcolor="#e9e9e9" align="right"><FONT  color="#0000cc"><b><?php echo $LDCurrencyShortName ?></b> </FONT></td>
-	<td bgcolor="#f9f9f9"><input type="text" name="short_name" size=10 maxlength=40 value="<?php echo $short_name ?>">
-      </td>  
+	<td bgcolor="#f9f9f9"><input type="text" name="short_name" size=10 maxlength=40 value="<?php echo utf8_encode($short_name) ?>">
+      </td>
 	</tr>
 <tr>
 	<td bgcolor="#e9e9e9" align="right"><FONT  color="#0000cc"><b><?php echo $LDCurrencyLongName ?></b> </FONT></td>
 	<td bgcolor="#f9f9f9"><input type="text" name="long_name" size=40 maxlength=10 value="<?php echo $long_name ?>">
-      </td>  
+      </td>
 	</tr>
 <tr>
 	<td bgcolor="#e9e9e9" align="right"><FONT  color="#0000cc"><b><?php echo $LDCurrencyInfo ?></b> </FONT></td>
 	<td bgcolor="#f9f9f9"><input type="text" name="info" size=40 maxlength=60 value="<?php echo $info ?>">
-      </td>  
+      </td>
 	</tr>
 </table>
 <p>
